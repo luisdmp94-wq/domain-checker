@@ -4,6 +4,7 @@ import requests
 import json
 import ssl
 import builtwith
+import nmap
 from datetime import datetime
 
 def get_ip(domain):
@@ -97,6 +98,31 @@ def detect_technologies(domain):
         print(f"  Error: {e}")
         return {}
 
+def scan_ports(ip):
+    print(f"\nEscaneando puertos de {ip}:")
+    try:
+        nm = nmap.PortScanner()
+        nm.scan(ip, '21,22,23,25,80,443,3306,3389,5432,8080,8443', '-T4')
+        
+        open_ports = []
+        for host in nm.all_hosts():
+            for proto in nm[host].all_protocols():
+                ports = nm[host][proto].keys()
+                for port in ports:
+                    state = nm[host][proto][port]['state']
+                    service = nm[host][proto][port]['name']
+                    if state == 'open':
+                        print(f"  ABIERTO  {port}/{proto} - {service}")
+                        open_ports.append({"puerto": port, "protocolo": proto, "servicio": service})
+        
+        if not open_ports:
+            print("  No se encontraron puertos abiertos en el rango analizado")
+        
+        return open_ports
+    except Exception as e:
+        print(f"  Error: {e}")
+        return []
+
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -105,18 +131,19 @@ def generate_markdown(report):
     security = report['cabeceras_seguridad']
     subdomains = report['subdominios']
     techs = report['tecnologias']
+    ports = report['puertos']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
     
-    if len(missing) == 0:
+    if len(missing) == 0 and len(ports) <= 2:
         risk = "BAJO"
     elif len(missing) <= 3:
         risk = "MEDIO"
     else:
         risk = "ALTO"
 
-    md = f"""# Informe de Seguridad — {domain}
+    md = f"""# Informe de Seguridad - {domain}
 
 **Fecha:** {fecha}
 **IP:** {ip}
@@ -143,6 +170,12 @@ def generate_markdown(report):
 
 ---
 
+## Puertos Abiertos
+
+{chr(10).join(f'- {p["puerto"]}/{p["protocolo"]} - {p["servicio"]}' for p in ports) if ports else '- Ninguno encontrado'}
+
+---
+
 ## Subdominios Encontrados
 
 {chr(10).join(f'- {s["subdominio"]} -> {s["ip"]}' for s in subdomains) if subdomains else '- Ninguno encontrado'}
@@ -151,7 +184,7 @@ def generate_markdown(report):
 
 ## Tecnologias Detectadas
 
-{chr(10).join(f'- **{cat}:** {", ".join(techs)}' for cat, techs in techs.items()) if techs else '- No detectadas'}
+{chr(10).join(f'- **{cat}:** {", ".join(t)}' for cat, t in techs.items()) if techs else '- No detectadas'}
 
 ---
 
@@ -161,7 +194,6 @@ def generate_markdown(report):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(md)
     print(f"\nInforme Markdown guardado en: {filename}")
-    return filename
 
 def save_report(data, domain):
     filename = f"report_{domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -185,6 +217,7 @@ def main():
     subdomains = find_subdomains(domain)
     ssl_info = check_ssl(domain)
     technologies = detect_technologies(domain)
+    ports = scan_ports(ip)
     
     report = {
         "dominio": domain,
@@ -193,7 +226,8 @@ def main():
         "ssl": ssl_info,
         "cabeceras_seguridad": security,
         "subdominios": subdomains,
-        "tecnologias": technologies
+        "tecnologias": technologies,
+        "puertos": ports
     }
     
     save_report(report, domain)
