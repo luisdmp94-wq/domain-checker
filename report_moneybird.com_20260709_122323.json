@@ -1,0 +1,176 @@
+{
+  "dominio": "moneybird.com",
+  "fecha": "2026-07-09 12:23:23",
+  "ip": "63.178.33.154",
+  "ssl": {
+    "emisor": "Amazon",
+    "expira": "2027-01-05",
+    "dias_restantes": 180,
+    "valido": true
+  },
+  "cabeceras_seguridad": {
+    "Strict-Transport-Security": {
+      "presente": true,
+      "descripcion": "HSTS - fuerza HTTPS"
+    },
+    "Content-Security-Policy": {
+      "presente": false,
+      "descripcion": "CSP - previene XSS"
+    },
+    "X-Frame-Options": {
+      "presente": true,
+      "descripcion": "Proteccion contra clickjacking"
+    },
+    "X-Content-Type-Options": {
+      "presente": true,
+      "descripcion": "Previene MIME sniffing"
+    },
+    "Referrer-Policy": {
+      "presente": true,
+      "descripcion": "Controla informacion del referrer"
+    },
+    "Permissions-Policy": {
+      "presente": false,
+      "descripcion": "Controla permisos del navegador"
+    },
+    "X-XSS-Protection": {
+      "presente": true,
+      "descripcion": "Proteccion XSS legacy"
+    }
+  },
+  "subdominios": [
+    {
+      "subdominio": "www.moneybird.com",
+      "ip": "51.102.218.191"
+    },
+    {
+      "subdominio": "api.moneybird.com",
+      "ip": "51.102.218.191"
+    },
+    {
+      "subdominio": "admin.moneybird.com",
+      "ip": "51.102.218.191"
+    },
+    {
+      "subdominio": "dev.moneybird.com",
+      "ip": "51.102.218.191"
+    },
+    {
+      "subdominio": "staging.moneybird.com",
+      "ip": "63.186.33.7"
+    },
+    {
+      "subdominio": "app.moneybird.com",
+      "ip": "63.186.33.7"
+    },
+    {
+      "subdominio": "portal.moneybird.com",
+      "ip": "63.186.33.7"
+    },
+    {
+      "subdominio": "test.moneybird.com",
+      "ip": "63.178.33.154"
+    },
+    {
+      "subdominio": "vpn.moneybird.com",
+      "ip": "51.102.218.191"
+    }
+  ],
+  "tecnologias": {
+    "web-servers": [
+      "Nginx"
+    ]
+  },
+  "puertos": [
+    {
+      "puerto": 80,
+      "protocolo": "tcp",
+      "servicio": "http"
+    },
+    {
+      "puerto": 443,
+      "protocolo": "tcp",
+      "servicio": "https"
+    }
+  ],
+  "waf": {
+    "detectado": false,
+    "nombre": null
+  },
+  "dns": {
+    "MX": [
+      "alt2.aspmx.l.google.com.",
+      "aspmx3.googlemail.com.",
+      "aspmx2.googlemail.com.",
+      "aspmx.l.google.com.",
+      "alt1.aspmx.l.google.com."
+    ],
+    "NS": [
+      "ns-80.awsdns-10.com.",
+      "ns-1380.awsdns-44.org.",
+      "ns-766.awsdns-31.net.",
+      "ns-1968.awsdns-54.co.uk."
+    ],
+    "TXT": [
+      "\"QuoVadis=2a249d25-1e7e-4ee8-a640-f11b28740489\"",
+      "\"anthropic-domain-verification-gnqf1n=YXXscskLWiMv3LyxFIm4RJxuu\"",
+      "\"mistral-domain-verification=f5a8e16c8dc0633709df012fc2e17bbccaad1271\"",
+      "\"google-site-verification=xwEcsK0rqvowgKC0W9eCr9Gx40jnkisSkqKIop9SPNs\"",
+      "\"MS=ms75515495\"",
+      "\"Digicert=p19smpgtz9wfmvt24kg697pr50p5zr1n\"",
+      "\"v=spf1 ip4:141.193.32.144 ip4:69.169.228.128/30 include:_spf.google.com -all\""
+    ],
+    "DMARC": [
+      "\"v=DMARC1; p=reject; sp=reject; rua=mailto:reports@rua.moneybird.com;\""
+    ],
+    "spf_presente": true,
+    "dmarc_presente": true
+  },
+  "robots_sitemap": {
+    "robots": "User-agent: *\n\n# Links to Administrations\nDisallow: /1*/\nDisallow: /2*/\nDisallow: /3*/\nDisallow: /4*/\nDisallow: /5*/\nDisallow: /6*/\nDisallow: /7*/\nDisallow: /8*/\nDisallow: /9*/\nDisallow: /0*/\nDisallow: /admin/\nDisallow: /user/\nDisallow: /mbrs/\nDisallow: /app/\n\n# API Calls\nDisallow: /api/\nDisallow: /direct_bank_links/\n",
+    "sitemap": null,
+    "rutas_interesantes": [
+      "Disallow: /admin/",
+      "Disallow: /api/"
+    ]
+  },
+  "archivos_sensibles": [],
+  "http_redirect": {
+    "redirige": true,
+    "status": 301,
+    "destino": "https://moneybird.com/"
+  },
+  "cookies": [],
+  "cors": [
+    {
+      "endpoint": "https://moneybird.com/",
+      "origen": "https://evil.com",
+      "problema": "wildcard *",
+      "credentials": ""
+    },
+    {
+      "endpoint": "https://moneybird.com/",
+      "origen": "https://attacker.com",
+      "problema": "wildcard *",
+      "credentials": ""
+    },
+    {
+      "endpoint": "https://moneybird.com/",
+      "origen": "null",
+      "problema": "wildcard *",
+      "credentials": ""
+    },
+    {
+      "endpoint": "https://moneybird.com/",
+      "origen": "https://moneybird.com.evil.com",
+      "problema": "wildcard *",
+      "credentials": ""
+    }
+  ],
+  "http_methods": [
+    {
+      "metodo": "CONNECT",
+      "status": 400
+    }
+  ]
+}

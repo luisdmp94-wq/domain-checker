@@ -306,30 +306,22 @@ def check_cookies(domain):
 def check_cors(domain):
     print(f"\nAnalizando CORS de {domain}:")
     results = []
-    
     test_origins = [
         f"https://evil.com",
         f"https://attacker.com",
         f"null",
         f"https://{domain}.evil.com",
     ]
-    
     endpoints = [
         f"https://{domain}/",
         f"https://api.{domain}/",
     ]
-    
     for endpoint in endpoints:
         for origin in test_origins:
             try:
-                r = requests.get(
-                    endpoint,
-                    headers={"Origin": origin},
-                    timeout=5
-                )
+                r = requests.get(endpoint, headers={"Origin": origin}, timeout=5)
                 acao = r.headers.get('Access-Control-Allow-Origin', '')
                 acac = r.headers.get('Access-Control-Allow-Credentials', '')
-                
                 if acao == '*':
                     print(f"  ALERTA  {endpoint} - CORS wildcard (*) detectado")
                     results.append({"endpoint": endpoint, "origen": origin, "problema": "wildcard *", "credentials": acac})
@@ -345,9 +337,28 @@ def check_cors(domain):
                     results.append({"endpoint": endpoint, "origen": origin, "problema": "acepta null origin", "credentials": acac})
             except:
                 pass
-    
     if not results:
         print(f"  OK: No se detectaron problemas CORS")
+    return results
+
+def check_http_methods(domain):
+    print(f"\nVerificando metodos HTTP de {domain}:")
+    dangerous_methods = ["PUT", "DELETE", "TRACE", "CONNECT", "PATCH", "OPTIONS"]
+    results = []
+    
+    for method in dangerous_methods:
+        try:
+            r = requests.request(method, f"https://{domain}/", timeout=5)
+            if r.status_code not in [405, 501, 403]:
+                print(f"  ALERTA  {method} permitido - Status {r.status_code}")
+                results.append({"metodo": method, "status": r.status_code})
+            else:
+                print(f"  OK  {method} bloqueado - Status {r.status_code}")
+        except Exception as e:
+            pass
+    
+    if not results:
+        print(f"  OK: No se detectaron metodos peligrosos habilitados")
     
     return results
 
@@ -367,12 +378,13 @@ def generate_markdown(report):
     redirect = report['http_redirect']
     cookies = report['cookies']
     cors = report['cors']
+    methods = report['http_methods']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
     cookie_issues = [c for c in cookies if c.get('problemas')]
 
-    if len(missing) == 0 and not sensitive and not cookie_issues and not cors:
+    if len(missing) == 0 and not sensitive and not cookie_issues and not cors and not methods:
         risk = "BAJO"
     elif len(missing) <= 3 and not sensitive:
         risk = "MEDIO"
@@ -403,7 +415,13 @@ def generate_markdown(report):
 
 ## CORS
 
-{chr(10).join(f'- {c["problema"].upper()}: {c["endpoint"]} con origen {c["origen"]}' for c in cors) if cors else '- OK: Sin problemas CORS detectados'}
+{chr(10).join(f'- {c["problema"].upper()}: {c["endpoint"]}' for c in cors) if cors else '- OK: Sin problemas CORS'}
+
+---
+
+## Metodos HTTP Peligrosos
+
+{chr(10).join(f'- ALERTA: {m["metodo"]} habilitado (status {m["status"]})' for m in methods) if methods else '- OK: Sin metodos peligrosos detectados'}
 
 ---
 
@@ -499,6 +517,7 @@ def main():
     http_redirect = check_http_redirect(domain)
     cookies = check_cookies(domain)
     cors = check_cors(domain)
+    http_methods = check_http_methods(domain)
     
     report = {
         "dominio": domain,
@@ -515,7 +534,8 @@ def main():
         "archivos_sensibles": sensitive_files,
         "http_redirect": http_redirect,
         "cookies": cookies,
-        "cors": cors
+        "cors": cors,
+        "http_methods": http_methods
     }
     
     save_report(report, domain)
