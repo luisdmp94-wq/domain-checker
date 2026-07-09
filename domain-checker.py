@@ -434,24 +434,11 @@ def calculate_risk_score(report):
         score -= 15
         issues.append("CORS critico con credentials detectado")
 
-    # Metodos HTTP peligrosos (-10) - CONNECT con 400 es normal, no cuenta
+    # Metodos HTTP peligrosos (-10)
     real_dangerous = [m for m in report['http_methods'] if not (m['metodo'] == 'CONNECT' and m['status'] == 400)]
     if real_dangerous:
         score -= 10
         issues.append("Metodos HTTP peligrosos habilitados")
-
-    # Email spoofing (-15 si vulnerable)
-    email = report.get('email_spoofing', {})
-    if email.get('vulnerable'):
-        score -= 15
-        for issue in email.get('issues', []):
-            issues.append(f"Email spoofing: {issue}")
-
-    # JS findings sensibles (-10)
-    js_sensitive = [j for j in report.get('js_files', []) if j['tipo'] in ['api_key', 'aws_key', 'secret']]
-    if js_sensitive:
-        score -= 10
-        issues.append("Informacion sensible en JavaScript")
 
     # DNS faltante (-10)
     if not report['dns'].get('spf_presente'):
@@ -545,6 +532,109 @@ def scan_js_files(domain):
     except Exception as e:
         print(f"  Error: {e}")
     
+    return findings
+
+def check_email_spoofing(domain):
+    print(f"\nAnalizando vulnerabilidad email spoofing de {domain}:")
+    results = {"spf": None, "dmarc": None, "dkim": None, "vulnerable": False, "issues": []}
+    try:
+        txt_records = dns.resolver.resolve(domain, "TXT")
+        spf_record = None
+        for r in txt_records:
+            txt = str(r)
+            if "v=spf1" in txt:
+                spf_record = txt
+                break
+        if not spf_record:
+            results["spf"] = "FALTA"
+            results["issues"].append("Sin SPF - vulnerable a spoofing")
+            results["vulnerable"] = True
+            print(f"  SPF: FALTA - vulnerable")
+        elif "-all" in spf_record:
+            results["spf"] = "ESTRICTO"
+            print(f"  SPF: OK (estricto -all)")
+        elif "~all" in spf_record:
+            results["spf"] = "FLEXIBLE"
+            print(f"  SPF: DEBIL (~all softfail)")
+        else:
+            results["spf"] = "DEBIL"
+            results["vulnerable"] = True
+            print(f"  SPF: Sin politica de rechazo")
+    except:
+        results["spf"] = "ERROR"
+        results["vulnerable"] = True
+        print(f"  SPF: No encontrado")
+    try:
+        dmarc_records = dns.resolver.resolve(f"_dmarc.{domain}", "TXT")
+        dmarc_record = str(list(dmarc_records)[0])
+        if "p=reject" in dmarc_record:
+            results["dmarc"] = "ESTRICTO"
+            print(f"  DMARC: OK (p=reject)")
+        elif "p=quarantine" in dmarc_record:
+            results["dmarc"] = "MEDIO"
+            print(f"  DMARC: MEDIO (p=quarantine)")
+        elif "p=none" in dmarc_record:
+            results["dmarc"] = "DEBIL"
+            results["vulnerable"] = True
+            results["issues"].append("DMARC usa p=none")
+            print(f"  DMARC: DEBIL (p=none)")
+        else:
+            results["dmarc"] = "SIN_POLITICA"
+            results["vulnerable"] = True
+            print(f"  DMARC: Sin politica")
+    except:
+        results["dmarc"] = "FALTA"
+        results["vulnerable"] = True
+        print(f"  DMARC: FALTA")
+    dkim_selectors = ["default", "google", "mail", "dkim", "k1", "selector1", "selector2"]
+    dkim_found = False
+    for selector in dkim_selectors:
+        try:
+            dns.resolver.resolve(f"{selector}._domainkey.{domain}", "TXT")
+            dkim_found = True
+            results["dkim"] = f"OK (selector: {selector})"
+            print(f"  DKIM: OK (selector '{selector}')")
+            break
+        except:
+            pass
+    if not dkim_found:
+        results["dkim"] = "No detectado"
+        print(f"  DKIM: No detectado")
+    if results["vulnerable"]:
+        print(f"  RESULTADO: VULNERABLE a email spoofing")
+    else:
+        print(f"  RESULTADO: Bien protegido")
+    return results
+
+
+def check_server_info(domain):
+    print(f"\nAnalizando informacion del servidor de {domain}:")
+    findings = []
+    try:
+        r = requests.get(f"https://{domain}", timeout=5)
+        headers = dict(r.headers)
+        info_headers = {
+            "Server": "Version del servidor web",
+            "X-Powered-By": "Tecnologia del backend",
+            "X-AspNet-Version": "Version de ASP.NET",
+            "X-Generator": "Generador del sitio",
+            "Via": "Proxy/CDN info",
+            "X-Backend-Server": "Servidor backend expuesto",
+            "X-Runtime": "Runtime del servidor",
+            "X-Version": "Version expuesta"
+        }
+        for header, description in info_headers.items():
+            value = headers.get(header, "")
+            if value:
+                print(f"  ENCONTRADO  {header}: {value}")
+                findings.append({"header": header, "valor": value})
+        server = headers.get("Server", "")
+        if server and any(char.isdigit() for char in server):
+            print(f"  ALERTA: Server header revela version: {server}")
+        if not findings:
+            print(f"  OK: No se encontro informacion sensible del servidor")
+    except Exception as e:
+        print(f"  Error: {e}")
     return findings
 
 def check_shodan(ip, api_key=None):
@@ -744,6 +834,8 @@ def main():
     source_code = check_source_code(domain)
     js_findings = scan_js_files(domain)
     shodan_info = check_shodan(ip)
+    email_spoofing = check_email_spoofing(domain)
+    server_info = check_server_info(domain)
     risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info})
     
     report = {
@@ -771,6 +863,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
 
