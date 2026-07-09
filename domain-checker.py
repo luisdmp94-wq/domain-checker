@@ -395,6 +395,80 @@ def check_source_code(domain):
     
     return findings
 
+
+def calculate_risk_score(report):
+    print(f"\nCalculando puntuacion de riesgo...")
+    score = 100
+    issues = []
+
+    # Cabeceras de seguridad (-5 por cada una que falta)
+    missing_headers = [h for h, v in report['cabeceras_seguridad'].items() if not v['presente']]
+    score -= len(missing_headers) * 5
+    for h in missing_headers:
+        issues.append(f"Cabecera faltante: {h}")
+
+    # SSL (-20 si expira en menos de 30 dias)
+    ssl = report['ssl']
+    if ssl.get('dias_restantes', 999) < 30:
+        score -= 20
+        issues.append("Certificado SSL expira pronto")
+
+    # Sin WAF (-10)
+    if not report['waf'].get('detectado'):
+        score -= 10
+        issues.append("Sin WAF detectado")
+
+    # Sin redireccion HTTPS (-15)
+    if not report['http_redirect'].get('redirige'):
+        score -= 15
+        issues.append("No redirige HTTP a HTTPS")
+
+    # Archivos sensibles (-25 por cada uno)
+    for f in report['archivos_sensibles']:
+        score -= 25
+        issues.append(f"Archivo sensible expuesto: {f['archivo']}")
+
+    # CORS problemas (-15)
+    cors_criticos = [c for c in report['cors'] if 'credentials' in c.get('problema', '')]
+    if cors_criticos:
+        score -= 15
+        issues.append("CORS critico con credentials detectado")
+
+    # Metodos HTTP peligrosos (-10)
+    if report['http_methods']:
+        score -= 10
+        issues.append("Metodos HTTP peligrosos habilitados")
+
+    # DNS faltante (-10)
+    if not report['dns'].get('spf_presente'):
+        score -= 10
+        issues.append("SPF faltante - riesgo email spoofing")
+    if not report['dns'].get('dmarc_presente'):
+        score -= 10
+        issues.append("DMARC faltante - riesgo email spoofing")
+
+    # Informacion sensible en codigo (-10)
+    sensitive_findings = [s for s in report['codigo_fuente'] if s['tipo'] in ['api_key', 'aws_key', 'token', 'ip_interna']]
+    if sensitive_findings:
+        score -= 10
+        issues.append("Informacion sensible en codigo fuente")
+
+    score = max(0, score)
+
+    if score >= 80:
+        nivel = "BAJO"
+    elif score >= 60:
+        nivel = "MEDIO"
+    elif score >= 40:
+        nivel = "ALTO"
+    else:
+        nivel = "CRITICO"
+
+    print(f"  Puntuacion: {score}/100 - Riesgo {nivel}")
+    for issue in issues:
+        print(f"  - {issue}")
+
+    return {"score": score, "nivel": nivel, "issues": issues}
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -559,6 +633,7 @@ def main():
     cors = check_cors(domain)
     http_methods = check_http_methods(domain)
     source_code = check_source_code(domain)
+    risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code})
     
     report = {
         "dominio": domain,
@@ -585,3 +660,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
