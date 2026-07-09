@@ -469,6 +469,69 @@ def calculate_risk_score(report):
         print(f"  - {issue}")
 
     return {"score": score, "nivel": nivel, "issues": issues}
+
+def scan_js_files(domain):
+    print(f"\nEscaneando archivos JavaScript de {domain}:")
+    findings = []
+    
+    try:
+        r = requests.get(f"https://{domain}", timeout=5)
+        html = r.text
+        
+        # Encontrar archivos JS
+        js_pattern = r'src=["\']([^"\']+\.js[^"\']*)["\']'
+        js_files = re.findall(js_pattern, html)
+        
+        # Normalizar URLs
+        js_urls = []
+        for js in js_files[:10]:  # Limitar a 10 archivos
+            if js.startswith('http'):
+                js_urls.append(js)
+            elif js.startswith('//'):
+                js_urls.append(f"https:{js}")
+            elif js.startswith('/'):
+                js_urls.append(f"https://{domain}{js}")
+            else:
+                js_urls.append(f"https://{domain}/{js}")
+        
+        print(f"  Encontrados {len(js_urls)} archivos JS")
+        
+        # Patrones a buscar en JS
+        patterns = {
+            "endpoint": r'["\]/(?:api|v\d+|rest)/[a-zA-Z0-9/_\-]+',
+            "aws_key": r'AKIA[0-9A-Z]{16}',
+            "api_key": r'(?:api[_-]?key|apikey)\s*[:=]\s*["\']([a-zA-Z0-9_\-]{20,})["\']',
+            "secret": r'(?:secret|password|token)\s*[:=]\s*["\']([a-zA-Z0-9_\-]{8,})["\']',
+            "ip_interna": r'(?:10\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)\d{1,3}\.\d{1,3}',
+        }
+        
+        for js_url in js_urls:
+            try:
+                js_r = requests.get(js_url, timeout=5)
+                js_content = js_r.text
+                
+                for pattern_name, pattern in patterns.items():
+                    matches = re.findall(pattern, js_content, re.IGNORECASE)
+                    if matches:
+                        unique = list(set(matches))[:3]
+                        for match in unique:
+                            match_str = match[:80] if isinstance(match, str) else str(match)[:80]
+                            print(f"  ENCONTRADO  {pattern_name} en {js_url.split('/')[-1]}: {match_str}")
+                            findings.append({
+                                "tipo": pattern_name,
+                                "archivo": js_url.split('/')[-1],
+                                "valor": match_str
+                            })
+            except:
+                pass
+        
+        if not findings:
+            print(f"  No se encontro informacion sensible en archivos JS")
+    
+    except Exception as e:
+        print(f"  Error: {e}")
+    
+    return findings
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -633,7 +696,8 @@ def main():
     cors = check_cors(domain)
     http_methods = check_http_methods(domain)
     source_code = check_source_code(domain)
-    risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code})
+    js_findings = scan_js_files(domain)
+    risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings})
     
     report = {
         "dominio": domain,
@@ -652,7 +716,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code
+        "codigo_fuente": source_code, "js_files": js_findings
     }
     
     save_report(report, domain)
@@ -660,5 +724,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
