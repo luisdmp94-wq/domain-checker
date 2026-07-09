@@ -5,7 +5,10 @@ import json
 import ssl
 import builtwith
 import nmap
+import subprocess
 from datetime import datetime
+
+WAFW00F_PATH = r"C:\Users\Luisd\AppData\Local\Python\pythoncore-3.14-64\Scripts\wafw00f.exe"
 
 def get_ip(domain):
     try:
@@ -103,7 +106,6 @@ def scan_ports(ip):
     try:
         nm = nmap.PortScanner()
         nm.scan(ip, '21,22,23,25,80,443,3306,3389,5432,8080,8443', '-T4')
-        
         open_ports = []
         for host in nm.all_hosts():
             for proto in nm[host].all_protocols():
@@ -114,14 +116,35 @@ def scan_ports(ip):
                     if state == 'open':
                         print(f"  ABIERTO  {port}/{proto} - {service}")
                         open_ports.append({"puerto": port, "protocolo": proto, "servicio": service})
-        
         if not open_ports:
             print("  No se encontraron puertos abiertos en el rango analizado")
-        
         return open_ports
     except Exception as e:
         print(f"  Error: {e}")
         return []
+
+def detect_waf(domain):
+    print(f"\nDetectando WAF de {domain}:")
+    try:
+        result = subprocess.run(
+            [WAFW00F_PATH, f"https://{domain}"],
+            capture_output=True, text=True, timeout=30
+        )
+        output = result.stdout
+        if "is behind" in output:
+            lines = [l for l in output.split('\n') if "is behind" in l]
+            waf_name = lines[0].strip() if lines else "WAF detectado"
+            print(f"  WAF detectado: {waf_name}")
+            return {"detectado": True, "nombre": waf_name}
+        elif "No WAF" in output or "not behind" in output:
+            print(f"  No se detecto WAF")
+            return {"detectado": False, "nombre": None}
+        else:
+            print(f"  No se pudo determinar")
+            return {"detectado": None, "nombre": None}
+    except Exception as e:
+        print(f"  Error: {e}")
+        return {"error": str(e)}
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -132,6 +155,7 @@ def generate_markdown(report):
     subdomains = report['subdominios']
     techs = report['tecnologias']
     ports = report['puertos']
+    waf = report['waf']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
@@ -143,11 +167,14 @@ def generate_markdown(report):
     else:
         risk = "ALTO"
 
+    waf_text = waf.get('nombre') if waf.get('detectado') else "No detectado"
+
     md = f"""# Informe de Seguridad - {domain}
 
 **Fecha:** {fecha}
 **IP:** {ip}
 **Riesgo general:** {risk}
+**WAF:** {waf_text}
 
 ---
 
@@ -218,6 +245,7 @@ def main():
     ssl_info = check_ssl(domain)
     technologies = detect_technologies(domain)
     ports = scan_ports(ip)
+    waf = detect_waf(domain)
     
     report = {
         "dominio": domain,
@@ -227,7 +255,8 @@ def main():
         "cabeceras_seguridad": security,
         "subdominios": subdomains,
         "tecnologias": technologies,
-        "puertos": ports
+        "puertos": ports,
+        "waf": waf
     }
     
     save_report(report, domain)
