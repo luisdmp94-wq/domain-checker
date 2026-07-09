@@ -150,18 +150,8 @@ def detect_waf(domain):
 def check_dns_records(domain):
     print(f"\nAnalizando registros DNS de {domain}:")
     records = {}
-    
-    checks = {
-        "SPF": ("TXT", "v=spf1"),
-        "DMARC": ("TXT", "_dmarc"),
-        "MX": ("MX", None),
-        "NS": ("NS", None),
-        "TXT": ("TXT", None)
-    }
-    
     spf_found = False
     dmarc_found = False
-    
     try:
         mx_records = dns.resolver.resolve(domain, 'MX')
         records['MX'] = [str(r.exchange) for r in mx_records]
@@ -169,7 +159,6 @@ def check_dns_records(domain):
     except:
         records['MX'] = []
         print(f"  MX: No encontrado")
-    
     try:
         ns_records = dns.resolver.resolve(domain, 'NS')
         records['NS'] = [str(r) for r in ns_records]
@@ -177,7 +166,6 @@ def check_dns_records(domain):
     except:
         records['NS'] = []
         print(f"  NS: No encontrado")
-    
     try:
         txt_records = dns.resolver.resolve(domain, 'TXT')
         records['TXT'] = [str(r) for r in txt_records]
@@ -194,7 +182,6 @@ def check_dns_records(domain):
             print(f"  DMARC: verificando subdominio...")
     except:
         records['TXT'] = []
-    
     try:
         dmarc_records = dns.resolver.resolve(f"_dmarc.{domain}", 'TXT')
         dmarc_found = True
@@ -204,11 +191,43 @@ def check_dns_records(domain):
         if not dmarc_found:
             records['DMARC'] = []
             print(f"  DMARC: FALTA - riesgo de email spoofing")
-    
     records['spf_presente'] = spf_found
     records['dmarc_presente'] = dmarc_found
-    
     return records
+
+def check_robots_and_sitemap(domain):
+    print(f"\nAnalizando robots.txt y sitemap de {domain}:")
+    result = {"robots": None, "sitemap": None, "rutas_interesantes": []}
+    
+    keywords = ["admin", "login", "api", "dashboard", "backup", "config", "secret", "private", "internal", "dev"]
+    
+    try:
+        r = requests.get(f"https://{domain}/robots.txt", timeout=5)
+        if r.status_code == 200:
+            result["robots"] = r.text[:500]
+            print(f"  robots.txt: ENCONTRADO")
+            lines = r.text.split('\n')
+            for line in lines:
+                for keyword in keywords:
+                    if keyword in line.lower() and ('disallow' in line.lower() or 'allow' in line.lower()):
+                        print(f"  INTERESANTE: {line.strip()}")
+                        result["rutas_interesantes"].append(line.strip())
+        else:
+            print(f"  robots.txt: No encontrado ({r.status_code})")
+    except Exception as e:
+        print(f"  robots.txt: Error - {e}")
+
+    try:
+        r = requests.get(f"https://{domain}/sitemap.xml", timeout=5)
+        if r.status_code == 200:
+            result["sitemap"] = "Encontrado"
+            print(f"  sitemap.xml: ENCONTRADO")
+        else:
+            print(f"  sitemap.xml: No encontrado ({r.status_code})")
+    except Exception as e:
+        print(f"  sitemap.xml: Error - {e}")
+    
+    return result
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -221,6 +240,7 @@ def generate_markdown(report):
     ports = report['puertos']
     waf = report['waf']
     dns_info = report['dns']
+    robots = report['robots_sitemap']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
@@ -258,6 +278,14 @@ def generate_markdown(report):
 - **DMARC:** {'OK' if dns_info.get('dmarc_presente') else 'FALTA - riesgo de email spoofing'}
 - **MX:** {', '.join(dns_info.get('MX', [])) or 'No encontrado'}
 - **NS:** {', '.join(dns_info.get('NS', [])) or 'No encontrado'}
+
+---
+
+## Robots.txt y Sitemap
+
+- **robots.txt:** {'Encontrado' if robots.get('robots') else 'No encontrado'}
+- **sitemap.xml:** {robots.get('sitemap') or 'No encontrado'}
+- **Rutas interesantes:** {chr(10).join(f'  - {r}' for r in robots.get('rutas_interesantes', [])) or 'Ninguna'}
 
 ---
 
@@ -321,6 +349,7 @@ def main():
     ports = scan_ports(ip)
     waf = detect_waf(domain)
     dns_info = check_dns_records(domain)
+    robots_sitemap = check_robots_and_sitemap(domain)
     
     report = {
         "dominio": domain,
@@ -332,7 +361,8 @@ def main():
         "tecnologias": technologies,
         "puertos": ports,
         "waf": waf,
-        "dns": dns_info
+        "dns": dns_info,
+        "robots_sitemap": robots_sitemap
     }
     
     save_report(report, domain)

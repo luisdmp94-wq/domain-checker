@@ -1,0 +1,121 @@
+{
+  "dominio": "bumba.global",
+  "fecha": "2026-07-09 11:59:36",
+  "ip": "104.26.11.128",
+  "ssl": {
+    "emisor": "Let's Encrypt",
+    "expira": "2026-09-29",
+    "dias_restantes": 82,
+    "valido": true
+  },
+  "cabeceras_seguridad": {
+    "Strict-Transport-Security": {
+      "presente": true,
+      "descripcion": "HSTS - fuerza HTTPS"
+    },
+    "Content-Security-Policy": {
+      "presente": true,
+      "descripcion": "CSP - previene XSS"
+    },
+    "X-Frame-Options": {
+      "presente": true,
+      "descripcion": "Proteccion contra clickjacking"
+    },
+    "X-Content-Type-Options": {
+      "presente": true,
+      "descripcion": "Previene MIME sniffing"
+    },
+    "Referrer-Policy": {
+      "presente": true,
+      "descripcion": "Controla informacion del referrer"
+    },
+    "Permissions-Policy": {
+      "presente": true,
+      "descripcion": "Controla permisos del navegador"
+    },
+    "X-XSS-Protection": {
+      "presente": true,
+      "descripcion": "Proteccion XSS legacy"
+    }
+  },
+  "subdominios": [
+    {
+      "subdominio": "www.bumba.global",
+      "ip": "172.67.69.169"
+    },
+    {
+      "subdominio": "api.bumba.global",
+      "ip": "104.26.10.128"
+    },
+    {
+      "subdominio": "admin.bumba.global",
+      "ip": "104.26.10.128"
+    },
+    {
+      "subdominio": "dev.bumba.global",
+      "ip": "172.67.69.169"
+    },
+    {
+      "subdominio": "vpn.bumba.global",
+      "ip": "18.168.124.33"
+    }
+  ],
+  "tecnologias": {
+    "cdn": [
+      "CloudFlare"
+    ]
+  },
+  "puertos": [
+    {
+      "puerto": 80,
+      "protocolo": "tcp",
+      "servicio": "http"
+    },
+    {
+      "puerto": 443,
+      "protocolo": "tcp",
+      "servicio": "https"
+    },
+    {
+      "puerto": 8080,
+      "protocolo": "tcp",
+      "servicio": "http-proxy"
+    },
+    {
+      "puerto": 8443,
+      "protocolo": "tcp",
+      "servicio": "https-alt"
+    }
+  ],
+  "waf": {
+    "detectado": true,
+    "nombre": "[+] The site https://bumba.global is behind Cloudflare (Cloudflare Inc.) WAF."
+  },
+  "dns": {
+    "MX": [
+      "bumba-global.mail.protection.outlook.com."
+    ],
+    "NS": [
+      "arushi.ns.cloudflare.com.",
+      "micah.ns.cloudflare.com."
+    ],
+    "TXT": [
+      "\"tiktok-developers-site-verification=PrUCY0j9BiK2Lk9DbtDvLyv3KcUjQbSm\"",
+      "\"NETORG10322106.onmicrosoft.com\"",
+      "\"brevo-code:c860965ffde731113d02915f921d8625\"",
+      "\"google-site-verification=ViheOfwAlZOxWhEVdsOfA-U81tI1HqlukyGOoqgO7cg\"",
+      "\"v=spf1 include:secureserver.net -all\"",
+      "\"google-site-verification=5Yjetoe5SbyPY0j9Vppf6zmM82fcpVUGNnTQ5A9clTc\""
+    ],
+    "DMARC": [
+      "\"v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com\""
+    ],
+    "spf_presente": true,
+    "dmarc_presente": true
+  },
+  "robots_sitemap": {
+    "robots": null,
+    "sitemap": null,
+    "rutas_interesantes": []
+  }
+}
