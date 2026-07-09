@@ -564,6 +564,106 @@ def check_shodan(ip, api_key=None):
     except Exception as e:
         print(f"  Error: {e}")
         return {}
+
+def check_email_spoofing(domain):
+    print(f"\nAnalizando vulnerabilidad email spoofing de {domain}:")
+    results = {
+        "spf": None,
+        "dmarc": None,
+        "dkim": None,
+        "vulnerable": False,
+        "issues": []
+    }
+    
+    # Check SPF
+    try:
+        txt_records = dns.resolver.resolve(domain, 'TXT')
+        spf_record = None
+        for r in txt_records:
+            txt = str(r)
+            if 'v=spf1' in txt:
+                spf_record = txt
+                break
+        
+        if not spf_record:
+            results['spf'] = "FALTA"
+            results['issues'].append("Sin SPF - vulnerable a spoofing")
+            results['vulnerable'] = True
+            print(f"  SPF: FALTA - vulnerable a email spoofing")
+        elif '-all' in spf_record:
+            results['spf'] = "ESTRICTO"
+            print(f"  SPF: OK (estricto -all)")
+        elif '~all' in spf_record:
+            results['spf'] = "FLEXIBLE"
+            results['issues'].append("SPF usa ~all (softfail) en vez de -all (hardfail)")
+            print(f"  SPF: DEBIL (~all softfail) - deberia usar -all")
+        elif '?all' in spf_record:
+            results['spf'] = "NEUTRAL"
+            results['vulnerable'] = True
+            results['issues'].append("SPF usa ?all (neutral) - no protege contra spoofing")
+            print(f"  SPF: MUY DEBIL (?all neutral) - vulnerable")
+        else:
+            results['spf'] = "SIN_POLITICA"
+            results['vulnerable'] = True
+            print(f"  SPF: Sin politica de rechazo")
+    except:
+        results['spf'] = "ERROR"
+        results['vulnerable'] = True
+        results['issues'].append("No se pudo obtener SPF")
+        print(f"  SPF: No encontrado")
+
+    # Check DMARC
+    try:
+        dmarc_records = dns.resolver.resolve(f"_dmarc.{domain}", 'TXT')
+        dmarc_record = str(list(dmarc_records)[0])
+        
+        if 'p=reject' in dmarc_record:
+            results['dmarc'] = "ESTRICTO"
+            print(f"  DMARC: OK (p=reject)")
+        elif 'p=quarantine' in dmarc_record:
+            results['dmarc'] = "MEDIO"
+            results['issues'].append("DMARC usa p=quarantine, deberia ser p=reject")
+            print(f"  DMARC: MEDIO (p=quarantine)")
+        elif 'p=none' in dmarc_record:
+            results['dmarc'] = "DEBIL"
+            results['vulnerable'] = True
+            results['issues'].append("DMARC usa p=none - no protege contra spoofing")
+            print(f"  DMARC: DEBIL (p=none) - solo monitoriza, no protege")
+        else:
+            results['dmarc'] = "SIN_POLITICA"
+            results['vulnerable'] = True
+            print(f"  DMARC: Sin politica definida")
+    except:
+        results['dmarc'] = "FALTA"
+        results['vulnerable'] = True
+        results['issues'].append("Sin DMARC - vulnerable a spoofing")
+        print(f"  DMARC: FALTA - vulnerable")
+
+    # Check DKIM (selector comunes)
+    dkim_selectors = ["default", "google", "mail", "dkim", "k1", "selector1", "selector2"]
+    dkim_found = False
+    for selector in dkim_selectors:
+        try:
+            dns.resolver.resolve(f"{selector}._domainkey.{domain}", 'TXT')
+            dkim_found = True
+            results['dkim'] = f"OK (selector: {selector})"
+            print(f"  DKIM: OK (selector '{selector}' encontrado)")
+            break
+        except:
+            pass
+    
+    if not dkim_found:
+        results['dkim'] = "No detectado con selectores comunes"
+        print(f"  DKIM: No detectado con selectores comunes")
+
+    if results['vulnerable']:
+        print(f"  RESULTADO: VULNERABLE a email spoofing")
+        for issue in results['issues']:
+            print(f"    - {issue}")
+    else:
+        print(f"  RESULTADO: Bien protegido contra email spoofing")
+    
+    return results
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -730,7 +830,8 @@ def main():
     source_code = check_source_code(domain)
     js_findings = scan_js_files(domain)
     shodan_info = check_shodan(ip)
-    risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info})
+    email_spoofing = check_email_spoofing(domain)
+    risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing})
     
     report = {
         "dominio": domain,
@@ -749,7 +850,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info
+        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing
     }
     
     save_report(report, domain)
@@ -757,6 +858,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
