@@ -238,7 +238,6 @@ def check_sensitive_files(domain):
         ".htaccess", "web.config",
         "debug.log", "error.log"
     ]
-    
     found = []
     for file in sensitive_files:
         try:
@@ -250,11 +249,64 @@ def check_sensitive_files(domain):
                 print(f"  BLOQUEADO   /{file} (403 Forbidden)")
         except:
             pass
-    
     if not found:
         print(f"  No se encontraron archivos sensibles accesibles")
-    
     return found
+
+def check_http_redirect(domain):
+    print(f"\nVerificando redireccion HTTP->HTTPS de {domain}:")
+    try:
+        r = requests.get(f"http://{domain}", timeout=5, allow_redirects=False)
+        if r.status_code in [301, 302, 307, 308]:
+            location = r.headers.get('Location', '')
+            if location.startswith('https://'):
+                print(f"  OK: Redirige a HTTPS ({r.status_code})")
+                return {"redirige": True, "status": r.status_code, "destino": location}
+            else:
+                print(f"  ALERTA: Redirige pero NO a HTTPS - {location}")
+                return {"redirige": False, "status": r.status_code, "destino": location}
+        else:
+            print(f"  ALERTA: No redirige a HTTPS (status {r.status_code})")
+            return {"redirige": False, "status": r.status_code}
+    except Exception as e:
+        print(f"  Error: {e}")
+        return {"error": str(e)}
+
+def check_cookies(domain):
+    print(f"\nAnalizando cookies de {domain}:")
+    try:
+        r = requests.get(f"https://{domain}", timeout=5)
+        cookies = r.cookies
+        results = []
+        
+        if not cookies:
+            print(f"  No se encontraron cookies")
+            return results
+        
+        for cookie in cookies:
+            issues = []
+            if not cookie.secure:
+                issues.append("sin Secure flag")
+            if not cookie.has_nonstandard_attr('HttpOnly'):
+                issues.append("sin HttpOnly flag")
+            if not cookie.has_nonstandard_attr('SameSite'):
+                issues.append("sin SameSite flag")
+            
+            if issues:
+                print(f"  ALERTA  {cookie.name}: {', '.join(issues)}")
+            else:
+                print(f"  OK  {cookie.name}: bien configurada")
+            
+            results.append({
+                "nombre": cookie.name,
+                "secure": cookie.secure,
+                "problemas": issues
+            })
+        
+        return results
+    except Exception as e:
+        print(f"  Error: {e}")
+        return []
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -269,11 +321,14 @@ def generate_markdown(report):
     dns_info = report['dns']
     robots = report['robots_sitemap']
     sensitive = report['archivos_sensibles']
+    redirect = report['http_redirect']
+    cookies = report['cookies']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
+    cookie_issues = [c for c in cookies if c.get('problemas')]
     
-    if len(missing) == 0 and len(ports) <= 2 and not sensitive:
+    if len(missing) == 0 and not sensitive and not cookie_issues:
         risk = "BAJO"
     elif len(missing) <= 3 and not sensitive:
         risk = "MEDIO"
@@ -281,6 +336,7 @@ def generate_markdown(report):
         risk = "ALTO"
 
     waf_text = waf.get('nombre') if waf.get('detectado') else "No detectado"
+    redirect_text = "OK - Redirige a HTTPS" if redirect.get('redirige') else "ALERTA - No redirige a HTTPS"
 
     md = f"""# Informe de Seguridad - {domain}
 
@@ -288,6 +344,7 @@ def generate_markdown(report):
 **IP:** {ip}
 **Riesgo general:** {risk}
 **WAF:** {waf_text}
+**HTTP->HTTPS:** {redirect_text}
 
 ---
 
@@ -300,25 +357,29 @@ def generate_markdown(report):
 
 ---
 
+## Cookies
+
+{chr(10).join(f'- {c["nombre"]}: {", ".join(c["problemas"]) if c["problemas"] else "OK"}' for c in cookies) if cookies else '- No se encontraron cookies'}
+
+---
+
 ## Registros DNS
 
-- **SPF:** {'OK' if dns_info.get('spf_presente') else 'FALTA - riesgo de email spoofing'}
-- **DMARC:** {'OK' if dns_info.get('dmarc_presente') else 'FALTA - riesgo de email spoofing'}
+- **SPF:** {'OK' if dns_info.get('spf_presente') else 'FALTA'}
+- **DMARC:** {'OK' if dns_info.get('dmarc_presente') else 'FALTA'}
 - **MX:** {', '.join(dns_info.get('MX', [])) or 'No encontrado'}
-- **NS:** {', '.join(dns_info.get('NS', [])) or 'No encontrado'}
 
 ---
 
 ## Archivos Sensibles
 
-{chr(10).join(f'- ENCONTRADO: /{f["archivo"]} ({f["bytes"]} bytes)' for f in sensitive) if sensitive else '- Ninguno encontrado'}
+{chr(10).join(f'- ENCONTRADO: /{f["archivo"]}' for f in sensitive) if sensitive else '- Ninguno encontrado'}
 
 ---
 
-## Robots.txt y Sitemap
+## Robots.txt
 
 - **robots.txt:** {'Encontrado' if robots.get('robots') else 'No encontrado'}
-- **sitemap.xml:** {robots.get('sitemap') or 'No encontrado'}
 {chr(10).join(f'- INTERESANTE: {r}' for r in robots.get('rutas_interesantes', []))}
 
 ---
@@ -335,17 +396,17 @@ def generate_markdown(report):
 
 ## Puertos Abiertos
 
-{chr(10).join(f'- {p["puerto"]}/{p["protocolo"]} - {p["servicio"]}' for p in ports) if ports else '- Ninguno encontrado'}
+{chr(10).join(f'- {p["puerto"]}/{p["protocolo"]} - {p["servicio"]}' for p in ports) if ports else '- Ninguno'}
 
 ---
 
-## Subdominios Encontrados
+## Subdominios
 
-{chr(10).join(f'- {s["subdominio"]} -> {s["ip"]}' for s in subdomains) if subdomains else '- Ninguno encontrado'}
+{chr(10).join(f'- {s["subdominio"]} -> {s["ip"]}' for s in subdomains) if subdomains else '- Ninguno'}
 
 ---
 
-## Tecnologias Detectadas
+## Tecnologias
 
 {chr(10).join(f'- **{cat}:** {", ".join(t)}' for cat, t in techs.items()) if techs else '- No detectadas'}
 
@@ -385,6 +446,8 @@ def main():
     dns_info = check_dns_records(domain)
     robots_sitemap = check_robots_and_sitemap(domain)
     sensitive_files = check_sensitive_files(domain)
+    http_redirect = check_http_redirect(domain)
+    cookies = check_cookies(domain)
     
     report = {
         "dominio": domain,
@@ -398,7 +461,9 @@ def main():
         "waf": waf,
         "dns": dns_info,
         "robots_sitemap": robots_sitemap,
-        "archivos_sensibles": sensitive_files
+        "archivos_sensibles": sensitive_files,
+        "http_redirect": http_redirect,
+        "cookies": cookies
     }
     
     save_report(report, domain)
