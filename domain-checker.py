@@ -7,6 +7,7 @@ import builtwith
 import nmap
 import subprocess
 import dns.resolver
+import re
 from datetime import datetime
 
 WAFW00F_PATH = r"C:\Users\Luisd\AppData\Local\Python\pythoncore-3.14-64\Scripts\wafw00f.exe"
@@ -345,7 +346,6 @@ def check_http_methods(domain):
     print(f"\nVerificando metodos HTTP de {domain}:")
     dangerous_methods = ["PUT", "DELETE", "TRACE", "CONNECT", "PATCH", "OPTIONS"]
     results = []
-    
     for method in dangerous_methods:
         try:
             r = requests.request(method, f"https://{domain}/", timeout=5)
@@ -354,13 +354,46 @@ def check_http_methods(domain):
                 results.append({"metodo": method, "status": r.status_code})
             else:
                 print(f"  OK  {method} bloqueado - Status {r.status_code}")
-        except Exception as e:
+        except:
             pass
-    
     if not results:
         print(f"  OK: No se detectaron metodos peligrosos habilitados")
-    
     return results
+
+def check_source_code(domain):
+    print(f"\nAnalizando codigo fuente de {domain}:")
+    findings = []
+    
+    patterns = {
+        "email": r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+        "ip_interna": r'(?:10\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)\d{1,3}\.\d{1,3}',
+        "api_key": r'(?:api[_-]?key|apikey|api[_-]?token)["\s]*[:=]["\s]*([a-zA-Z0-9_\-]{20,})',
+        "aws_key": r'AKIA[0-9A-Z]{16}',
+        "token": r'(?:token|secret|password)["\s]*[:=]["\s]*["\']([a-zA-Z0-9_\-]{8,})["\']',
+        "comentario": r'<!--.*?-->',
+        "todo": r'(?:TODO|FIXME|HACK|XXX|BUG).*',
+    }
+    
+    try:
+        r = requests.get(f"https://{domain}", timeout=5)
+        html = r.text
+        
+        for pattern_name, pattern in patterns.items():
+            matches = re.findall(pattern, html, re.IGNORECASE | re.DOTALL)
+            if matches:
+                unique_matches = list(set(matches))[:5]
+                for match in unique_matches:
+                    match_str = match[:100] if isinstance(match, str) else str(match)[:100]
+                    print(f"  ENCONTRADO  {pattern_name}: {match_str}")
+                    findings.append({"tipo": pattern_name, "valor": match_str})
+        
+        if not findings:
+            print(f"  No se encontro informacion sensible en el codigo fuente")
+    
+    except Exception as e:
+        print(f"  Error: {e}")
+    
+    return findings
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -379,12 +412,13 @@ def generate_markdown(report):
     cookies = report['cookies']
     cors = report['cors']
     methods = report['http_methods']
+    source = report['codigo_fuente']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
     cookie_issues = [c for c in cookies if c.get('problemas')]
 
-    if len(missing) == 0 and not sensitive and not cookie_issues and not cors and not methods:
+    if len(missing) == 0 and not sensitive and not cookie_issues and not cors and not methods and not source:
         risk = "BAJO"
     elif len(missing) <= 3 and not sensitive:
         risk = "MEDIO"
@@ -413,6 +447,12 @@ def generate_markdown(report):
 
 ---
 
+## Informacion Sensible en Codigo Fuente
+
+{chr(10).join(f'- {s["tipo"].upper()}: {s["valor"]}' for s in source) if source else '- No se encontro informacion sensible'}
+
+---
+
 ## CORS
 
 {chr(10).join(f'- {c["problema"].upper()}: {c["endpoint"]}' for c in cors) if cors else '- OK: Sin problemas CORS'}
@@ -421,7 +461,7 @@ def generate_markdown(report):
 
 ## Metodos HTTP Peligrosos
 
-{chr(10).join(f'- ALERTA: {m["metodo"]} habilitado (status {m["status"]})' for m in methods) if methods else '- OK: Sin metodos peligrosos detectados'}
+{chr(10).join(f'- ALERTA: {m["metodo"]} habilitado (status {m["status"]})' for m in methods) if methods else '- OK: Sin metodos peligrosos'}
 
 ---
 
@@ -518,6 +558,7 @@ def main():
     cookies = check_cookies(domain)
     cors = check_cors(domain)
     http_methods = check_http_methods(domain)
+    source_code = check_source_code(domain)
     
     report = {
         "dominio": domain,
@@ -535,7 +576,8 @@ def main():
         "http_redirect": http_redirect,
         "cookies": cookies,
         "cors": cors,
-        "http_methods": http_methods
+        "http_methods": http_methods,
+        "codigo_fuente": source_code
     }
     
     save_report(report, domain)
