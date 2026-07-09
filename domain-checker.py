@@ -198,9 +198,7 @@ def check_dns_records(domain):
 def check_robots_and_sitemap(domain):
     print(f"\nAnalizando robots.txt y sitemap de {domain}:")
     result = {"robots": None, "sitemap": None, "rutas_interesantes": []}
-    
     keywords = ["admin", "login", "api", "dashboard", "backup", "config", "secret", "private", "internal", "dev"]
-    
     try:
         r = requests.get(f"https://{domain}/robots.txt", timeout=5)
         if r.status_code == 200:
@@ -216,7 +214,6 @@ def check_robots_and_sitemap(domain):
             print(f"  robots.txt: No encontrado ({r.status_code})")
     except Exception as e:
         print(f"  robots.txt: Error - {e}")
-
     try:
         r = requests.get(f"https://{domain}/sitemap.xml", timeout=5)
         if r.status_code == 200:
@@ -226,8 +223,38 @@ def check_robots_and_sitemap(domain):
             print(f"  sitemap.xml: No encontrado ({r.status_code})")
     except Exception as e:
         print(f"  sitemap.xml: Error - {e}")
-    
     return result
+
+def check_sensitive_files(domain):
+    print(f"\nBuscando archivos sensibles en {domain}:")
+    sensitive_files = [
+        ".env", ".env.backup", ".env.local",
+        "config.php", "wp-config.php", "config.js",
+        "backup.zip", "backup.sql", "database.sql",
+        ".git/config", ".git/HEAD",
+        "phpinfo.php", "info.php",
+        "admin.php", "login.php",
+        "composer.json", "package.json",
+        ".htaccess", "web.config",
+        "debug.log", "error.log"
+    ]
+    
+    found = []
+    for file in sensitive_files:
+        try:
+            r = requests.get(f"https://{domain}/{file}", timeout=5, allow_redirects=False)
+            if r.status_code == 200:
+                print(f"  ENCONTRADO  /{file} (200 OK) - {len(r.content)} bytes")
+                found.append({"archivo": file, "status": r.status_code, "bytes": len(r.content)})
+            elif r.status_code == 403:
+                print(f"  BLOQUEADO   /{file} (403 Forbidden)")
+        except:
+            pass
+    
+    if not found:
+        print(f"  No se encontraron archivos sensibles accesibles")
+    
+    return found
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -241,13 +268,14 @@ def generate_markdown(report):
     waf = report['waf']
     dns_info = report['dns']
     robots = report['robots_sitemap']
+    sensitive = report['archivos_sensibles']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
     
-    if len(missing) == 0 and len(ports) <= 2:
+    if len(missing) == 0 and len(ports) <= 2 and not sensitive:
         risk = "BAJO"
-    elif len(missing) <= 3:
+    elif len(missing) <= 3 and not sensitive:
         risk = "MEDIO"
     else:
         risk = "ALTO"
@@ -281,11 +309,17 @@ def generate_markdown(report):
 
 ---
 
+## Archivos Sensibles
+
+{chr(10).join(f'- ENCONTRADO: /{f["archivo"]} ({f["bytes"]} bytes)' for f in sensitive) if sensitive else '- Ninguno encontrado'}
+
+---
+
 ## Robots.txt y Sitemap
 
 - **robots.txt:** {'Encontrado' if robots.get('robots') else 'No encontrado'}
 - **sitemap.xml:** {robots.get('sitemap') or 'No encontrado'}
-- **Rutas interesantes:** {chr(10).join(f'  - {r}' for r in robots.get('rutas_interesantes', [])) or 'Ninguna'}
+{chr(10).join(f'- INTERESANTE: {r}' for r in robots.get('rutas_interesantes', []))}
 
 ---
 
@@ -350,6 +384,7 @@ def main():
     waf = detect_waf(domain)
     dns_info = check_dns_records(domain)
     robots_sitemap = check_robots_and_sitemap(domain)
+    sensitive_files = check_sensitive_files(domain)
     
     report = {
         "dominio": domain,
@@ -362,7 +397,8 @@ def main():
         "puertos": ports,
         "waf": waf,
         "dns": dns_info,
-        "robots_sitemap": robots_sitemap
+        "robots_sitemap": robots_sitemap,
+        "archivos_sensibles": sensitive_files
     }
     
     save_report(report, domain)
