@@ -278,11 +278,9 @@ def check_cookies(domain):
         r = requests.get(f"https://{domain}", timeout=5)
         cookies = r.cookies
         results = []
-        
         if not cookies:
             print(f"  No se encontraron cookies")
             return results
-        
         for cookie in cookies:
             issues = []
             if not cookie.secure:
@@ -291,22 +289,67 @@ def check_cookies(domain):
                 issues.append("sin HttpOnly flag")
             if not cookie.has_nonstandard_attr('SameSite'):
                 issues.append("sin SameSite flag")
-            
             if issues:
                 print(f"  ALERTA  {cookie.name}: {', '.join(issues)}")
             else:
                 print(f"  OK  {cookie.name}: bien configurada")
-            
             results.append({
                 "nombre": cookie.name,
                 "secure": cookie.secure,
                 "problemas": issues
             })
-        
         return results
     except Exception as e:
         print(f"  Error: {e}")
         return []
+
+def check_cors(domain):
+    print(f"\nAnalizando CORS de {domain}:")
+    results = []
+    
+    test_origins = [
+        f"https://evil.com",
+        f"https://attacker.com",
+        f"null",
+        f"https://{domain}.evil.com",
+    ]
+    
+    endpoints = [
+        f"https://{domain}/",
+        f"https://api.{domain}/",
+    ]
+    
+    for endpoint in endpoints:
+        for origin in test_origins:
+            try:
+                r = requests.get(
+                    endpoint,
+                    headers={"Origin": origin},
+                    timeout=5
+                )
+                acao = r.headers.get('Access-Control-Allow-Origin', '')
+                acac = r.headers.get('Access-Control-Allow-Credentials', '')
+                
+                if acao == '*':
+                    print(f"  ALERTA  {endpoint} - CORS wildcard (*) detectado")
+                    results.append({"endpoint": endpoint, "origen": origin, "problema": "wildcard *", "credentials": acac})
+                elif acao == origin:
+                    if acac.lower() == 'true':
+                        print(f"  CRITICO  {endpoint} - Refleja origen {origin} con credentials=true")
+                        results.append({"endpoint": endpoint, "origen": origin, "problema": "refleja origen con credentials", "credentials": acac})
+                    else:
+                        print(f"  MEDIO  {endpoint} - Refleja origen {origin}")
+                        results.append({"endpoint": endpoint, "origen": origin, "problema": "refleja origen", "credentials": acac})
+                elif acao == 'null' and origin == 'null':
+                    print(f"  ALERTA  {endpoint} - Acepta origen null")
+                    results.append({"endpoint": endpoint, "origen": origin, "problema": "acepta null origin", "credentials": acac})
+            except:
+                pass
+    
+    if not results:
+        print(f"  OK: No se detectaron problemas CORS")
+    
+    return results
 
 def generate_markdown(report):
     domain = report['dominio']
@@ -323,12 +366,13 @@ def generate_markdown(report):
     sensitive = report['archivos_sensibles']
     redirect = report['http_redirect']
     cookies = report['cookies']
+    cors = report['cors']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
     cookie_issues = [c for c in cookies if c.get('problemas')]
-    
-    if len(missing) == 0 and not sensitive and not cookie_issues:
+
+    if len(missing) == 0 and not sensitive and not cookie_issues and not cors:
         risk = "BAJO"
     elif len(missing) <= 3 and not sensitive:
         risk = "MEDIO"
@@ -354,6 +398,12 @@ def generate_markdown(report):
 - **Expira:** {ssl_info.get('expira', 'N/A')}
 - **Dias restantes:** {ssl_info.get('dias_restantes', 'N/A')}
 - **Estado:** {'OK' if ssl_info.get('valido') else 'ALERTA'}
+
+---
+
+## CORS
+
+{chr(10).join(f'- {c["problema"].upper()}: {c["endpoint"]} con origen {c["origen"]}' for c in cors) if cors else '- OK: Sin problemas CORS detectados'}
 
 ---
 
@@ -448,6 +498,7 @@ def main():
     sensitive_files = check_sensitive_files(domain)
     http_redirect = check_http_redirect(domain)
     cookies = check_cookies(domain)
+    cors = check_cors(domain)
     
     report = {
         "dominio": domain,
@@ -463,7 +514,8 @@ def main():
         "robots_sitemap": robots_sitemap,
         "archivos_sensibles": sensitive_files,
         "http_redirect": http_redirect,
-        "cookies": cookies
+        "cookies": cookies,
+        "cors": cors
     }
     
     save_report(report, domain)
