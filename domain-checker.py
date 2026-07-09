@@ -6,6 +6,7 @@ import ssl
 import builtwith
 import nmap
 import subprocess
+import dns.resolver
 from datetime import datetime
 
 WAFW00F_PATH = r"C:\Users\Luisd\AppData\Local\Python\pythoncore-3.14-64\Scripts\wafw00f.exe"
@@ -146,6 +147,69 @@ def detect_waf(domain):
         print(f"  Error: {e}")
         return {"error": str(e)}
 
+def check_dns_records(domain):
+    print(f"\nAnalizando registros DNS de {domain}:")
+    records = {}
+    
+    checks = {
+        "SPF": ("TXT", "v=spf1"),
+        "DMARC": ("TXT", "_dmarc"),
+        "MX": ("MX", None),
+        "NS": ("NS", None),
+        "TXT": ("TXT", None)
+    }
+    
+    spf_found = False
+    dmarc_found = False
+    
+    try:
+        mx_records = dns.resolver.resolve(domain, 'MX')
+        records['MX'] = [str(r.exchange) for r in mx_records]
+        print(f"  MX: {', '.join(records['MX'])}")
+    except:
+        records['MX'] = []
+        print(f"  MX: No encontrado")
+    
+    try:
+        ns_records = dns.resolver.resolve(domain, 'NS')
+        records['NS'] = [str(r) for r in ns_records]
+        print(f"  NS: {', '.join(records['NS'])}")
+    except:
+        records['NS'] = []
+        print(f"  NS: No encontrado")
+    
+    try:
+        txt_records = dns.resolver.resolve(domain, 'TXT')
+        records['TXT'] = [str(r) for r in txt_records]
+        for txt in records['TXT']:
+            if 'v=spf1' in txt:
+                spf_found = True
+                print(f"  SPF: OK - {txt[:60]}...")
+            if 'v=DMARC1' in txt:
+                dmarc_found = True
+                print(f"  DMARC: OK")
+        if not spf_found:
+            print(f"  SPF: FALTA - riesgo de email spoofing")
+        if not dmarc_found:
+            print(f"  DMARC: verificando subdominio...")
+    except:
+        records['TXT'] = []
+    
+    try:
+        dmarc_records = dns.resolver.resolve(f"_dmarc.{domain}", 'TXT')
+        dmarc_found = True
+        records['DMARC'] = [str(r) for r in dmarc_records]
+        print(f"  DMARC: OK")
+    except:
+        if not dmarc_found:
+            records['DMARC'] = []
+            print(f"  DMARC: FALTA - riesgo de email spoofing")
+    
+    records['spf_presente'] = spf_found
+    records['dmarc_presente'] = dmarc_found
+    
+    return records
+
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -156,6 +220,7 @@ def generate_markdown(report):
     techs = report['tecnologias']
     ports = report['puertos']
     waf = report['waf']
+    dns_info = report['dns']
 
     ok = [h for h, v in security.items() if v['presente']]
     missing = [h for h, v in security.items() if not v['presente']]
@@ -184,6 +249,15 @@ def generate_markdown(report):
 - **Expira:** {ssl_info.get('expira', 'N/A')}
 - **Dias restantes:** {ssl_info.get('dias_restantes', 'N/A')}
 - **Estado:** {'OK' if ssl_info.get('valido') else 'ALERTA'}
+
+---
+
+## Registros DNS
+
+- **SPF:** {'OK' if dns_info.get('spf_presente') else 'FALTA - riesgo de email spoofing'}
+- **DMARC:** {'OK' if dns_info.get('dmarc_presente') else 'FALTA - riesgo de email spoofing'}
+- **MX:** {', '.join(dns_info.get('MX', [])) or 'No encontrado'}
+- **NS:** {', '.join(dns_info.get('NS', [])) or 'No encontrado'}
 
 ---
 
@@ -246,6 +320,7 @@ def main():
     technologies = detect_technologies(domain)
     ports = scan_ports(ip)
     waf = detect_waf(domain)
+    dns_info = check_dns_records(domain)
     
     report = {
         "dominio": domain,
@@ -256,7 +331,8 @@ def main():
         "subdominios": subdomains,
         "tecnologias": technologies,
         "puertos": ports,
-        "waf": waf
+        "waf": waf,
+        "dns": dns_info
     }
     
     save_report(report, domain)
