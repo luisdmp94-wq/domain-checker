@@ -3,6 +3,7 @@ import sys
 import requests
 import json
 import ssl
+import builtwith
 from datetime import datetime
 
 def get_ip(domain):
@@ -66,22 +67,17 @@ def check_ssl(domain):
         with socket.create_connection((domain, 443), timeout=5) as sock:
             with context.wrap_socket(sock, server_hostname=domain) as ssock:
                 cert = ssock.getpeercert()
-                
                 expiry = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
                 days_left = (expiry - datetime.utcnow()).days
-                
                 issuer = dict(x[0] for x in cert['issuer'])
                 subject = dict(x[0] for x in cert['subject'])
-                
                 print(f"  Emisor: {issuer.get('organizationName', 'Desconocido')}")
                 print(f"  Dominio: {subject.get('commonName', 'Desconocido')}")
                 print(f"  Expira: {expiry.strftime('%Y-%m-%d')} ({days_left} dias restantes)")
-                
                 if days_left < 30:
                     print(f"  ALERTA: Certificado expira en menos de 30 dias")
                 else:
                     print(f"  OK: Certificado valido")
-                
                 return {
                     "emisor": issuer.get('organizationName'),
                     "expira": expiry.strftime('%Y-%m-%d'),
@@ -91,6 +87,20 @@ def check_ssl(domain):
     except Exception as e:
         print(f"  Error SSL: {e}")
         return {"error": str(e)}
+
+def detect_technologies(domain):
+    print(f"\nDetectando tecnologias de {domain}:")
+    try:
+        info = builtwith.parse(f"https://{domain}")
+        if info:
+            for category, techs in info.items():
+                print(f"  {category}: {', '.join(techs)}")
+        else:
+            print("  No se detectaron tecnologias")
+        return info
+    except Exception as e:
+        print(f"  Error: {e}")
+        return {}
 
 def save_report(data, domain):
     filename = f"report_{domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -113,6 +123,7 @@ def main():
     security = check_security_headers(headers)
     subdomains = find_subdomains(domain)
     ssl_info = check_ssl(domain)
+    technologies = detect_technologies(domain)
     
     report = {
         "dominio": domain,
@@ -120,7 +131,8 @@ def main():
         "ip": ip,
         "ssl": ssl_info,
         "cabeceras_seguridad": security,
-        "subdominios": subdomains
+        "subdominios": subdomains,
+        "tecnologias": technologies
     }
     
     save_report(report, domain)

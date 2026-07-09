@@ -1,0 +1,106 @@
+{
+  "dominio": "wordpress.com",
+  "fecha": "2026-07-09 11:34:13",
+  "ip": "192.0.78.9",
+  "ssl": {
+    "emisor": "Let's Encrypt",
+    "expira": "2026-10-04",
+    "dias_restantes": 87,
+    "valido": true
+  },
+  "cabeceras_seguridad": {
+    "Strict-Transport-Security": {
+      "presente": true,
+      "descripcion": "HSTS — fuerza HTTPS"
+    },
+    "Content-Security-Policy": {
+      "presente": false,
+      "descripcion": "CSP — previene XSS"
+    },
+    "X-Frame-Options": {
+      "presente": true,
+      "descripcion": "Proteccion contra clickjacking"
+    },
+    "X-Content-Type-Options": {
+      "presente": true,
+      "descripcion": "Previene MIME sniffing"
+    },
+    "Referrer-Policy": {
+      "presente": false,
+      "descripcion": "Controla informacion del referrer"
+    },
+    "Permissions-Policy": {
+      "presente": false,
+      "descripcion": "Controla permisos del navegador"
+    },
+    "X-XSS-Protection": {
+      "presente": true,
+      "descripcion": "Proteccion XSS legacy"
+    }
+  },
+  "subdominios": [
+    {
+      "subdominio": "www.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "api.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "mail.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "admin.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "dev.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "staging.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "app.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "portal.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "test.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "vpn.wordpress.com",
+      "ip": "192.0.78.12"
+    }
+  ],
+  "tecnologias": {
+    "web-servers": [
+      "Nginx"
+    ],
+    "javascript-frameworks": [
+      "Lo-dash",
+      "Moment.js",
+      "React"
+    ],
+    "ecommerce": [
+      "WooCommerce"
+    ],
+    "cms": [
+      "WordPress"
+    ],
+    "programming-languages": [
+      "PHP"
+    ],
+    "blogs": [
+      "PHP",
+      "WordPress"
+    ]
+  }
+}
