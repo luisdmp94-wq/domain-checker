@@ -2,6 +2,7 @@
 import sys
 import requests
 import json
+import ssl
 from datetime import datetime
 
 def get_ip(domain):
@@ -15,7 +16,7 @@ def get_headers(domain):
     try:
         response = requests.get(f"https://{domain}", timeout=5)
         return dict(response.headers)
-    except requests.RequestException as e:
+    except requests.RequestException:
         return {}
 
 def check_security_headers(headers):
@@ -58,6 +59,39 @@ def find_subdomains(domain):
     
     return found
 
+def check_ssl(domain):
+    print(f"\nAnalizando SSL de {domain}:")
+    try:
+        context = ssl.create_default_context()
+        with socket.create_connection((domain, 443), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                cert = ssock.getpeercert()
+                
+                expiry = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
+                days_left = (expiry - datetime.utcnow()).days
+                
+                issuer = dict(x[0] for x in cert['issuer'])
+                subject = dict(x[0] for x in cert['subject'])
+                
+                print(f"  Emisor: {issuer.get('organizationName', 'Desconocido')}")
+                print(f"  Dominio: {subject.get('commonName', 'Desconocido')}")
+                print(f"  Expira: {expiry.strftime('%Y-%m-%d')} ({days_left} dias restantes)")
+                
+                if days_left < 30:
+                    print(f"  ALERTA: Certificado expira en menos de 30 dias")
+                else:
+                    print(f"  OK: Certificado valido")
+                
+                return {
+                    "emisor": issuer.get('organizationName'),
+                    "expira": expiry.strftime('%Y-%m-%d'),
+                    "dias_restantes": days_left,
+                    "valido": days_left > 0
+                }
+    except Exception as e:
+        print(f"  Error SSL: {e}")
+        return {"error": str(e)}
+
 def save_report(data, domain):
     filename = f"report_{domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(filename, "w", encoding="utf-8") as f:
@@ -78,11 +112,13 @@ def main():
     headers = get_headers(domain)
     security = check_security_headers(headers)
     subdomains = find_subdomains(domain)
+    ssl_info = check_ssl(domain)
     
     report = {
         "dominio": domain,
         "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "ip": ip,
+        "ssl": ssl_info,
         "cabeceras_seguridad": security,
         "subdominios": subdomains
     }
