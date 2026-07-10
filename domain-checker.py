@@ -1013,6 +1013,41 @@ def check_open_redirect(domain):
         print(f"  OK: No se detectaron open redirects")
     
     return findings
+
+def check_csrf(domain):
+    print(f"\nBuscando formularios sin proteccion CSRF en {domain}:")
+    findings = []
+    
+    try:
+        r = requests.get(f"https://{domain}", timeout=5)
+        html = r.text
+        
+        import re
+        forms = re.findall(r'<form[^>]*>(.*?)</form>', html, re.DOTALL | re.IGNORECASE)
+        
+        for i, form in enumerate(forms):
+            has_csrf = any(token in form.lower() for token in [
+                'csrf', '_token', 'authenticity_token', 'nonce', 
+                '__requestverificationtoken', 'x-csrf'
+            ])
+            
+            has_input = '<input' in form.lower()
+            
+            if has_input and not has_csrf:
+                print(f"  ALERTA  Formulario {i+1} sin token CSRF detectado")
+                findings.append({"formulario": i+1, "csrf": False})
+            elif has_input:
+                print(f"  OK  Formulario {i+1} tiene proteccion CSRF")
+        
+        if not forms:
+            print(f"  No se encontraron formularios en la pagina principal")
+        elif not findings:
+            print(f"  OK: Todos los formularios tienen proteccion CSRF")
+            
+    except Exception as e:
+        print(f"  Error: {e}")
+    
+    return findings
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -1184,6 +1219,7 @@ def main():
     takeover = check_subdomain_takeover(subdomains)
     cves = check_cves(technologies)
     open_redirects = check_open_redirect(domain)
+    csrf = check_csrf(domain)
     risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover})
     
     report = {
@@ -1203,7 +1239,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "open_redirects": open_redirects, "risk_score": risk_score
+        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "open_redirects": open_redirects, "csrf": csrf, "risk_score": risk_score
     }
     
     save_report(report, domain)
@@ -1212,6 +1248,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
