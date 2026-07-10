@@ -1,0 +1,545 @@
+{
+  "dominio": "wordpress.com",
+  "fecha": "2026-07-10 13:12:41",
+  "ip": "192.0.78.9",
+  "ssl": {
+    "emisor": "Let's Encrypt",
+    "expira": "2026-10-04",
+    "dias_restantes": 86,
+    "valido": true
+  },
+  "cabeceras_seguridad": {
+    "Strict-Transport-Security": {
+      "presente": true,
+      "descripcion": "HSTS - fuerza HTTPS"
+    },
+    "Content-Security-Policy": {
+      "presente": false,
+      "descripcion": "CSP - previene XSS"
+    },
+    "X-Frame-Options": {
+      "presente": true,
+      "descripcion": "Proteccion contra clickjacking"
+    },
+    "X-Content-Type-Options": {
+      "presente": true,
+      "descripcion": "Previene MIME sniffing"
+    },
+    "Referrer-Policy": {
+      "presente": false,
+      "descripcion": "Controla informacion del referrer"
+    },
+    "Permissions-Policy": {
+      "presente": false,
+      "descripcion": "Controla permisos del navegador"
+    },
+    "X-XSS-Protection": {
+      "presente": true,
+      "descripcion": "Proteccion XSS legacy"
+    }
+  },
+  "subdominios": [
+    {
+      "subdominio": "www.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "api.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "mail.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "admin.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "dev.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "staging.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "app.wordpress.com",
+      "ip": "192.0.78.13"
+    },
+    {
+      "subdominio": "portal.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "test.wordpress.com",
+      "ip": "192.0.78.12"
+    },
+    {
+      "subdominio": "vpn.wordpress.com",
+      "ip": "192.0.78.13"
+    }
+  ],
+  "tecnologias": {
+    "web-servers": [
+      "Nginx"
+    ],
+    "javascript-frameworks": [
+      "Lo-dash",
+      "Moment.js",
+      "React"
+    ],
+    "ecommerce": [
+      "WooCommerce"
+    ],
+    "cms": [
+      "WordPress"
+    ],
+    "programming-languages": [
+      "PHP"
+    ],
+    "blogs": [
+      "PHP",
+      "WordPress"
+    ]
+  },
+  "puertos": [
+    {
+      "puerto": 80,
+      "protocolo": "tcp",
+      "servicio": "http"
+    },
+    {
+      "puerto": 443,
+      "protocolo": "tcp",
+      "servicio": "https"
+    }
+  ],
+  "waf": {
+    "detectado": false,
+    "nombre": null
+  },
+  "dns": {
+    "MX": [
+      "mx-ams.automattic.com.",
+      "mx-dfw.automattic.com."
+    ],
+    "NS": [
+      "ns2.wordpress.com.",
+      "ns3.wordpress.com.",
+      "ns4.wordpress.com.",
+      "ns1.wordpress.com."
+    ],
+    "TXT": [
+      "\"openai-domain-verification=dv-AKnzAsfVXHG2wucO1Bcx2JC7\"",
+      "\"v=spf1 include:_spf.automattic.com include:servers.mcsv.net include:_spf-wwd.automattic.com include:mail.zendesk.com include:sendgrid.net include:145630858.spf04.hubspotemail.net include:amazonses.com -all\"",
+      "\"google-site-verification=CW2JYOoHSXW8x6QyQO_a0edu0gNOKsLIHcO49QquLdU\"",
+      "\"yahoo-verification-key=GqtxTvPQ+tFgwrCg9xNl6srlPSpDkTIj6q9YzADxxdE=\""
+    ],
+    "DMARC": [
+      "\"v=DMARC1; p=reject; pct=100; rua=mailto:0bqp2jnw@ag.dmarcian.com; ruf=mailto:0bqp2jnw@fr.dmarcian.com;\""
+    ],
+    "spf_presente": true,
+    "dmarc_presente": true
+  },
+  "robots_sitemap": {
+    "robots": "# If you are regularly crawling WordPress.com sites, please use our firehose to receive real-time push updates instead.\n# Please see https://developer.wordpress.com/docs/firehose/ for more details.\n\nSitemap: https://wordpress.com/sitemap.xml\nSitemap: https://wordpress.com/news-sitemap.xml\n\nSitemap: https://wordpress.com/go/sitemap.xml\nSitemap: https://wordpress.com/blog/sitemap.xml\nSitemap: https://wordpress.com/support/sitemap.xml\n\nUser-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.",
+    "sitemap": "Encontrado",
+    "rutas_interesantes": [
+      "Disallow: /wp-admin/",
+      "Allow: /wp-admin/admin-ajax.php",
+      "Disallow: /wp-login.php",
+      "Disallow: /remote-login.php",
+      "Disallow: /public.api/"
+    ]
+  },
+  "archivos_sensibles": [],
+  "http_redirect": {
+    "redirige": true,
+    "status": 301,
+    "destino": "https://wordpress.com/"
+  },
+  "cookies": [
+    {
+      "nombre": "tk_ai",
+      "secure": true,
+      "problemas": [
+        "sin HttpOnly flag"
+      ]
+    },
+    {
+      "nombre": "tk_ai_explat",
+      "secure": true,
+      "problemas": [
+        "sin HttpOnly flag"
+      ]
+    },
+    {
+      "nombre": "tk_qs",
+      "secure": true,
+      "problemas": [
+        "sin HttpOnly flag"
+      ]
+    },
+    {
+      "nombre": "explat_test_aa_weekly_lohp_2026_week_28",
+      "secure": true,
+      "problemas": [
+        "sin HttpOnly flag"
+      ]
+    },
+    {
+      "nombre": "wpcom_global_navigation_202606",
+      "secure": true,
+      "problemas": [
+        "sin HttpOnly flag"
+      ]
+    }
+  ],
+  "cors": [],
+  "http_methods": [
+    {
+      "metodo": "CONNECT",
+      "status": 400
+    }
+  ],
+  "codigo_fuente": [
+    {
+      "tipo": "email",
+      "valor": "privacypolicyupdates@automattic.com"
+    },
+    {
+      "tipo": "ip_interna",
+      "valor": "10.73.75"
+    },
+    {
+      "tipo": "comentario",
+      "valor": "<!-- .lp-hero-background.lp-hero-background-plus -->"
+    },
+    {
+      "tipo": "comentario",
+      "valor": "<!-- wpcom_wp_footer -->"
+    },
+    {
+      "tipo": "comentario",
+      "valor": "<!-- A8C Analytics [start] -->"
+    },
+    {
+      "tipo": "comentario",
+      "valor": "<!-- Intentionally left empty -->"
+    },
+    {
+      "tipo": "comentario",
+      "valor": "<!-- CCPA [start] -->"
+    },
+    {
+      "tipo": "todo",
+      "valor": "TODO: Identify user via email\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\t/**\n\t\t\t\t * Loads and fires the Facebook Pixel.\n\t\t\t\t */\n"
+    }
+  ],
+  "js_files": [
+    {
+      "tipo": "endpoint",
+      "archivo": "bundle.js?v=1753350210",
+      "valor": "l++)if(n"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "bundle.js?v=1753350210",
+      "valor": "u["
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "bundle.js?v=1753350210",
+      "valor": "t[1]:e"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "moment.min.js?m=1777962059i&#038;ver=2.30.1",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "moment.min.js?m=1777962059i&#038;ver=2.30.1",
+      "valor": "date:\"date\""
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "moment.min.js?m=1777962059i&#038;ver=2.30.1",
+      "valor": "parentLocale]||(lt[t"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=7496969728ca0f95732d",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=7496969728ca0f95732d",
+      "valor": "applyFiltersAsync:ee"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=7496969728ca0f95732d",
+      "valor": "\"function\")"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=990e85f234fee8f7d446",
+      "valor": "getOwnPropertyNames"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=990e85f234fee8f7d446",
+      "valor": "enumerable:"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=990e85f234fee8f7d446",
+      "valor": "Please"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=2faaf49020b2074de156",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=2faaf49020b2074de156",
+      "valor": "relativeTime:M"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "index.min.js?m=1783602332i&#038;ver=2faaf49020b2074de156",
+      "valor": "\"Europe/London|Europe/Isle_of_Man\""
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "w.js?68",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "w.js?68",
+      "valor": "visibilityState||\"visible\""
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "w.js?68",
+      "valor": "signalAliasUserGeneral:function(t"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "bilmur.min.js?i=17&amp;m=202628",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "bilmur.min.js?i=17&amp;m=202628",
+      "valor": "Bt()"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "bilmur.min.js?i=17&amp;m=202628",
+      "valor": "return\"a8c-cdn\""
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "def-queue.js?v=1566842360",
+      "valor": "window"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "def-queue.js?v=1566842360",
+      "valor": "empty"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "def-queue.js?v=1566842360",
+      "valor": "add"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "pixel.js",
+      "valor": "new"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "pixel.js",
+      "valor": "next:function()"
+    },
+    {
+      "tipo": "endpoint",
+      "archivo": "pixel.js",
+      "valor": "title||\"\")||Rt(f)||i"
+    }
+  ],
+  "shodan": {
+    "pais": "United States",
+    "ciudad": "San Francisco",
+    "org": "N/A",
+    "hostnames": [
+      "192.0.78.9,192.0.78.9"
+    ]
+  },
+  "email_spoofing": {
+    "spf": "ESTRICTO",
+    "dmarc": "ESTRICTO",
+    "dkim": "OK (selector: k1)",
+    "vulnerable": false,
+    "issues": []
+  },
+  "server_info": [
+    {
+      "header": "Server",
+      "valor": "nginx"
+    }
+  ],
+  "subdomain_takeover": [],
+  "cves": [
+    {
+      "tecnologia": "Nginx",
+      "cve_id": "CVE-2009-2629",
+      "cvss": "N/A",
+      "resumen": "Buffer underflow in src/http/ngx_http_parse.c in nginx 0.1.0 through 0.5.37, 0.6.x before 0.6.39, 0."
+    },
+    {
+      "tecnologia": "Nginx",
+      "cve_id": "CVE-2009-3896",
+      "cvss": "N/A",
+      "resumen": "src/http/ngx_http_parse.c in nginx (aka Engine X) 0.1.0 through 0.4.14, 0.5.x before 0.5.38, 0.6.x b"
+    },
+    {
+      "tecnologia": "Nginx",
+      "cve_id": "CVE-2009-3898",
+      "cvss": "N/A",
+      "resumen": "Directory traversal vulnerability in src/http/modules/ngx_http_dav_module.c in nginx (aka Engine X) "
+    },
+    {
+      "tecnologia": "Moment.js",
+      "cve_id": "CVE-2022-24785",
+      "cvss": 7.5,
+      "resumen": "Moment.js is a JavaScript date library for parsing, validating, manipulating, and formatting dates. "
+    },
+    {
+      "tecnologia": "React",
+      "cve_id": "CVE-1999-0454",
+      "cvss": "N/A",
+      "resumen": "A remote attacker can sometimes identify the operating system of a host based on how it reacts to so"
+    },
+    {
+      "tecnologia": "React",
+      "cve_id": "CVE-2002-0956",
+      "cvss": "N/A",
+      "resumen": "BlackICE Agent 3.1.eal does not always reactivate after a system standby, which could allow remote a"
+    },
+    {
+      "tecnologia": "React",
+      "cve_id": "CVE-2006-4073",
+      "cvss": "N/A",
+      "resumen": "Multiple PHP remote file inclusion vulnerabilities in Fabian Hainz phpCC Beta 4.2 allow remote attac"
+    },
+    {
+      "tecnologia": "WooCommerce",
+      "cve_id": "CVE-2014-4549",
+      "cvss": "N/A",
+      "resumen": "Multiple cross-site scripting (XSS) vulnerabilities in pages/3DComplete.php in the WooCommerce SageP"
+    },
+    {
+      "tecnologia": "WooCommerce",
+      "cve_id": "CVE-2014-6313",
+      "cvss": "N/A",
+      "resumen": "Cross-site scripting (XSS) vulnerability in the WooCommerce plugin before 2.2.3 for WordPress allows"
+    },
+    {
+      "tecnologia": "WooCommerce",
+      "cve_id": "CVE-2015-2069",
+      "cvss": "N/A",
+      "resumen": "Cross-site scripting (XSS) vulnerability in the WooCommerce plugin before 2.2.11 for WordPress allow"
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2004-1559",
+      "cvss": "N/A",
+      "resumen": "Multiple cross-site scripting (XSS) vulnerabilities in Wordpress 1.2 allow remote attackers to injec"
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2004-1584",
+      "cvss": "N/A",
+      "resumen": "CRLF injection vulnerability in wp-login.php in WordPress 1.2 allows remote attackers to perform HTT"
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2005-1102",
+      "cvss": "N/A",
+      "resumen": "Multiple cross-site scripting (XSS) vulnerabilities in template-functions-post.php in WordPress 1.5 "
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0058",
+      "cvss": "N/A",
+      "resumen": "Buffer overflow in PHP cgi program, php.cgi allows shell access."
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0238",
+      "cvss": "N/A",
+      "resumen": "php.cgi allows attackers to read any file on the system."
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0346",
+      "cvss": "N/A",
+      "resumen": "CGI PHP mlog script allows an attacker to read any file on the target server."
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0058",
+      "cvss": "N/A",
+      "resumen": "Buffer overflow in PHP cgi program, php.cgi allows shell access."
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0238",
+      "cvss": "N/A",
+      "resumen": "php.cgi allows attackers to read any file on the system."
+    },
+    {
+      "tecnologia": "PHP",
+      "cve_id": "CVE-1999-0346",
+      "cvss": "N/A",
+      "resumen": "CGI PHP mlog script allows an attacker to read any file on the target server."
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2004-1559",
+      "cvss": "N/A",
+      "resumen": "Multiple cross-site scripting (XSS) vulnerabilities in Wordpress 1.2 allow remote attackers to injec"
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2004-1584",
+      "cvss": "N/A",
+      "resumen": "CRLF injection vulnerability in wp-login.php in WordPress 1.2 allows remote attackers to perform HTT"
+    },
+    {
+      "tecnologia": "WordPress",
+      "cve_id": "CVE-2005-1102",
+      "cvss": "N/A",
+      "resumen": "Multiple cross-site scripting (XSS) vulnerabilities in template-functions-post.php in WordPress 1.5 "
+    }
+  ],
+  "open_redirects": [],
+  "risk_score": {
+    "score": 65,
+    "nivel": "MEDIO",
+    "issues": [
+      "Cabecera faltante: Content-Security-Policy",
+      "Cabecera faltante: Referrer-Policy",
+      "Cabecera faltante: Permissions-Policy",
+      "Sin WAF detectado",
+      "Informacion sensible en codigo fuente"
+    ]
+  }
+}

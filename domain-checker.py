@@ -979,6 +979,40 @@ def check_cves(technologies):
         print(f"  No se encontraron CVEs para las tecnologias detectadas")
     
     return findings
+
+def check_open_redirect(domain):
+    print(f"\nBuscando open redirects en {domain}:")
+    findings = []
+    
+    payloads = [
+        f"https://{domain}/redirect?url=https://evil.com",
+        f"https://{domain}/redirect?next=https://evil.com",
+        f"https://{domain}/redirect?to=https://evil.com",
+        f"https://{domain}/login?redirect=https://evil.com",
+        f"https://{domain}/login?next=https://evil.com",
+        f"https://{domain}/logout?redirect=https://evil.com",
+        f"https://{domain}/out?url=https://evil.com",
+        f"https://{domain}/?url=https://evil.com",
+        f"https://{domain}/?next=https://evil.com",
+        f"https://{domain}/?return=https://evil.com",
+    ]
+    
+    for url in payloads:
+        try:
+            r = requests.get(url, timeout=5, allow_redirects=False)
+            if r.status_code in [301, 302, 307, 308]:
+                location = r.headers.get("Location", "")
+                if "evil.com" in location:
+                    print(f"  VULNERABLE  Open redirect en: {url}")
+                    print(f"  Redirige a: {location}")
+                    findings.append({"url": url, "redirect": location})
+        except:
+            pass
+    
+    if not findings:
+        print(f"  OK: No se detectaron open redirects")
+    
+    return findings
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -1149,6 +1183,7 @@ def main():
     server_info = check_server_info(domain)
     takeover = check_subdomain_takeover(subdomains)
     cves = check_cves(technologies)
+    open_redirects = check_open_redirect(domain)
     risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover})
     
     report = {
@@ -1168,7 +1203,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "risk_score": risk_score
+        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "open_redirects": open_redirects, "risk_score": risk_score
     }
     
     save_report(report, domain)
@@ -1177,6 +1212,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
