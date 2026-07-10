@@ -1048,6 +1048,36 @@ def check_csrf(domain):
         print(f"  Error: {e}")
     
     return findings
+
+def check_subdomain_headers(subdomains):
+    print(f"\nAnalizando cabeceras de seguridad en subdominios:")
+    findings = []
+    
+    security_headers = [
+        "Strict-Transport-Security",
+        "Content-Security-Policy",
+        "X-Frame-Options",
+        "X-Content-Type-Options"
+    ]
+    
+    for sub in subdomains[:5]:
+        target = sub["subdominio"]
+        try:
+            r = requests.get(f"https://{target}", timeout=5, allow_redirects=True)
+            missing = []
+            for header in security_headers:
+                if header.lower() not in [h.lower() for h in r.headers.keys()]:
+                    missing.append(header)
+            
+            if missing:
+                print(f"  FALTA  {target}: {', '.join(missing)}")
+                findings.append({"subdominio": target, "cabeceras_faltantes": missing})
+            else:
+                print(f"  OK  {target}: todas las cabeceras presentes")
+        except:
+            print(f"  ERROR  {target}: no accesible")
+    
+    return findings
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -1220,6 +1250,7 @@ def main():
     cves = check_cves(technologies)
     open_redirects = check_open_redirect(domain)
     csrf = check_csrf(domain)
+    subdomain_headers = check_subdomain_headers(subdomains)
     risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover})
     
     report = {
@@ -1239,7 +1270,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "open_redirects": open_redirects, "csrf": csrf, "risk_score": risk_score
+        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "open_redirects": open_redirects, "csrf": csrf, "subdomain_headers": subdomain_headers, "risk_score": risk_score
     }
     
     save_report(report, domain)
@@ -1248,6 +1279,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
