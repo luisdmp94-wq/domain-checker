@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de Seguridad - moneybird.com</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 20px; color: #333; }
+  .container { max-width: 900px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #2c3e50; margin-top: 30px; }
+  .score { font-size: 48px; font-weight: bold; color: #27ae60; }
+  .nivel { font-size: 24px; color: #27ae60; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+  .ok { background: #d5f5e3; color: #27ae60; }
+  .fail { background: #fadbd8; color: #e74c3c; }
+  .warn { background: #fef9e7; color: #f39c12; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #3498db; color: white; padding: 10px; text-align: left; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  tr:hover { background: #f8f9fa; }
+  .meta { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+  .section { margin-bottom: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Informe de Seguridad</h1>
+  <div class="meta">Dominio: <strong>moneybird.com</strong> | IP: 52.59.144.121 | Fecha: 2026-07-10 13:25:09</div>
+  
+  <div class="section">
+    <div class="score">80/100</div>
+    <div class="nivel">Riesgo BAJO</div>
+  </div>
+
+  <div class="section">
+    <h2>SSL / HTTPS</h2>
+    <table>
+      <tr><th>Campo</th><th>Valor</th></tr>
+      <tr><td>Emisor</td><td>Amazon</td></tr>
+      <tr><td>Expira</td><td>2027-01-05</td></tr>
+      <tr><td>Dias restantes</td><td>179</td></tr>
+      <tr><td>Estado</td><td><span class="badge ok">Valido</span></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Cabeceras de Seguridad</h2>
+    <table>
+      <tr><th>Cabecera</th><th>Estado</th></tr>
+      <tr><td>Strict-Transport-Security</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-Frame-Options</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-Content-Type-Options</td><td><span class="badge ok">OK</span></td></tr><tr><td>Referrer-Policy</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-XSS-Protection</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>Content-Security-Policy</td><td><span class="badge fail">FALTA</span></td></tr><tr><td>Permissions-Policy</td><td><span class="badge fail">FALTA</span></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>DNS</h2>
+    <table>
+      <tr><th>Registro</th><th>Estado</th></tr>
+      <tr><td>SPF</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>DMARC</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>MX</td><td>aspmx.l.google.com., alt1.aspmx.l.google.com., alt2.aspmx.l.google.com., aspmx2.googlemail.com., aspmx3.googlemail.com.</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Subdominios (9 encontrados)</h2>
+    <table>
+      <tr><th>Subdominio</th><th>IP</th></tr>
+      <tr><td>www.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>api.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>admin.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>dev.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>staging.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>app.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>portal.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>test.moneybird.com</td><td>18.198.19.182</td></tr><tr><td>vpn.moneybird.com</td><td>18.198.19.182</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Puertos Abiertos</h2>
+    <table>
+      <tr><th>Puerto</th><th>Protocolo</th><th>Servicio</th></tr>
+      <tr><td>80</td><td>tcp</td><td>http</td></tr><tr><td>443</td><td>tcp</td><td>https</td></tr>
+    </table>
+  </div>
+
+  
+  
+  
+
+  <div class="section" style="text-align:center; color:#7f8c8d; font-size:12px; margin-top:40px;">
+    Informe generado automaticamente por domain-checker | vaalsec
+  </div>
+</div>
+</body>
+</html>

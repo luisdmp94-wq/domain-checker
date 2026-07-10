@@ -276,7 +276,7 @@ def check_http_redirect(domain):
 def check_cookies(domain):
     print(f"\nAnalizando cookies de {domain}:")
     try:
-        r = requests.get(f"https://{domain}", timeout=5)
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
         cookies = r.cookies
         results = []
         if not cookies:
@@ -375,7 +375,7 @@ def check_source_code(domain):
     }
     
     try:
-        r = requests.get(f"https://{domain}", timeout=5)
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
         html = r.text
         
         for pattern_name, pattern in patterns.items():
@@ -476,7 +476,7 @@ def scan_js_files(domain):
     findings = []
     
     try:
-        r = requests.get(f"https://{domain}", timeout=5)
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
         html = r.text
         
         # Encontrar archivos JS
@@ -611,7 +611,7 @@ def check_server_info(domain):
     print(f"\nAnalizando informacion del servidor de {domain}:")
     findings = []
     try:
-        r = requests.get(f"https://{domain}", timeout=5)
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
         headers = dict(r.headers)
         info_headers = {
             "Server": "Version del servidor web",
@@ -1019,15 +1019,15 @@ def check_csrf(domain):
     findings = []
     
     try:
-        r = requests.get(f"https://{domain}", timeout=5)
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
         html = r.text
         
         import re
         forms = re.findall(r'<form[^>]*>(.*?)</form>', html, re.DOTALL | re.IGNORECASE)
         
         for i, form in enumerate(forms):
-            has_csrf = any(token in form.lower() for token in [
-                'csrf', '_token', 'authenticity_token', 'nonce', 
+            has_csrf = any(token in html.lower() for token in [
+                'csrf', '_token', 'authenticity_token', 'nonce', 'csrf-token', 'csrf-param', 
                 '__requestverificationtoken', 'x-csrf'
             ])
             
@@ -1248,6 +1248,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
 
 
 
