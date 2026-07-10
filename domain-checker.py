@@ -944,6 +944,41 @@ def generate_html(report):
         f.write(html)
     print(f"\nInforme HTML guardado en: {filename}")
     return filename
+
+def check_cves(technologies):
+    print(f"\nBuscando CVEs para tecnologias detectadas:")
+    findings = []
+    
+    if not technologies:
+        print(f"  No hay tecnologias detectadas para buscar CVEs")
+        return findings
+    
+    for category, techs in technologies.items():
+        for tech in techs:
+            try:
+                r = requests.get(f"https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch={tech}&resultsPerPage=3", timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    cves = data.get("vulnerabilities", [])[:3]
+                    if cves:
+                        for cve in cves:
+                            cve_data = cve.get("cve", {}); cvss = cve_data.get("metrics", {}).get("cvssMetricV31", [{}])[0].get("cvssData", {}).get("baseScore", "N/A")
+                            cve_id = cve_data.get("id", "N/A")
+                            summary = cve_data.get("descriptions", [{}])[0].get("value", "")[:100]
+                            print(f"  CVE {cve_id} - CVSS {cvss} - {tech}: {summary}...")
+                            findings.append({
+                                "tecnologia": tech,
+                                "cve_id": cve_id,
+                                "cvss": cvss,
+                                "resumen": summary
+                            })
+            except:
+                pass
+    
+    if not findings:
+        print(f"  No se encontraron CVEs para las tecnologias detectadas")
+    
+    return findings
 def generate_markdown(report):
     domain = report['dominio']
     fecha = report['fecha']
@@ -1113,6 +1148,7 @@ def main():
     email_spoofing = check_email_spoofing(domain)
     server_info = check_server_info(domain)
     takeover = check_subdomain_takeover(subdomains)
+    cves = check_cves(technologies)
     risk_score = calculate_risk_score({"cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf, "http_redirect": http_redirect, "archivos_sensibles": sensitive_files, "cors": cors, "http_methods": http_methods, "dns": dns_info, "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover})
     
     report = {
@@ -1132,7 +1168,7 @@ def main():
         "cookies": cookies,
         "cors": cors,
         "http_methods": http_methods,
-        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "risk_score": risk_score
+        "codigo_fuente": source_code, "js_files": js_findings, "shodan": shodan_info, "email_spoofing": email_spoofing, "server_info": server_info, "subdomain_takeover": takeover, "cves": cves, "risk_score": risk_score
     }
     
     save_report(report, domain)
@@ -1141,6 +1177,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
 
 
 

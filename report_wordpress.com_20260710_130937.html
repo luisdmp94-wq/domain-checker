@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de Seguridad - wordpress.com</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 20px; color: #333; }
+  .container { max-width: 900px; margin: auto; background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #2c3e50; margin-top: 30px; }
+  .score { font-size: 48px; font-weight: bold; color: #f39c12; }
+  .nivel { font-size: 24px; color: #f39c12; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+  .ok { background: #d5f5e3; color: #27ae60; }
+  .fail { background: #fadbd8; color: #e74c3c; }
+  .warn { background: #fef9e7; color: #f39c12; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #3498db; color: white; padding: 10px; text-align: left; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  tr:hover { background: #f8f9fa; }
+  .meta { color: #7f8c8d; font-size: 14px; margin-bottom: 20px; }
+  .section { margin-bottom: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Informe de Seguridad</h1>
+  <div class="meta">Dominio: <strong>wordpress.com</strong> | IP: 192.0.78.9 | Fecha: 2026-07-10 13:09:37</div>
+  
+  <div class="section">
+    <div class="score">65/100</div>
+    <div class="nivel">Riesgo MEDIO</div>
+  </div>
+
+  <div class="section">
+    <h2>SSL / HTTPS</h2>
+    <table>
+      <tr><th>Campo</th><th>Valor</th></tr>
+      <tr><td>Emisor</td><td>Let's Encrypt</td></tr>
+      <tr><td>Expira</td><td>2026-10-04</td></tr>
+      <tr><td>Dias restantes</td><td>86</td></tr>
+      <tr><td>Estado</td><td><span class="badge ok">Valido</span></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Cabeceras de Seguridad</h2>
+    <table>
+      <tr><th>Cabecera</th><th>Estado</th></tr>
+      <tr><td>Strict-Transport-Security</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-Frame-Options</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-Content-Type-Options</td><td><span class="badge ok">OK</span></td></tr><tr><td>X-XSS-Protection</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>Content-Security-Policy</td><td><span class="badge fail">FALTA</span></td></tr><tr><td>Referrer-Policy</td><td><span class="badge fail">FALTA</span></td></tr><tr><td>Permissions-Policy</td><td><span class="badge fail">FALTA</span></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>DNS</h2>
+    <table>
+      <tr><th>Registro</th><th>Estado</th></tr>
+      <tr><td>SPF</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>DMARC</td><td><span class="badge ok">OK</span></td></tr>
+      <tr><td>MX</td><td>mx-ams.automattic.com., mx-dfw.automattic.com.</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Subdominios (10 encontrados)</h2>
+    <table>
+      <tr><th>Subdominio</th><th>IP</th></tr>
+      <tr><td>www.wordpress.com</td><td>192.0.78.13</td></tr><tr><td>api.wordpress.com</td><td>192.0.78.12</td></tr><tr><td>mail.wordpress.com</td><td>192.0.78.13</td></tr><tr><td>admin.wordpress.com</td><td>192.0.78.12</td></tr><tr><td>dev.wordpress.com</td><td>192.0.78.13</td></tr><tr><td>staging.wordpress.com</td><td>192.0.78.12</td></tr><tr><td>app.wordpress.com</td><td>192.0.78.13</td></tr><tr><td>portal.wordpress.com</td><td>192.0.78.12</td></tr><tr><td>test.wordpress.com</td><td>192.0.78.12</td></tr><tr><td>vpn.wordpress.com</td><td>192.0.78.13</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Puertos Abiertos</h2>
+    <table>
+      <tr><th>Puerto</th><th>Protocolo</th><th>Servicio</th></tr>
+      <tr><td>80</td><td>tcp</td><td>http</td></tr><tr><td>443</td><td>tcp</td><td>https</td></tr>
+    </table>
+  </div>
+
+  
+  
+  
+
+  <div class="section" style="text-align:center; color:#7f8c8d; font-size:12px; margin-top:40px;">
+    Informe generado automaticamente por domain-checker | vaalsec
+  </div>
+</div>
+</body>
+</html>
