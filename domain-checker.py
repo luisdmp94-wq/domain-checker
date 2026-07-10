@@ -811,10 +811,48 @@ def generate_html(report):
 
   {'<div class="section"><h2>Archivos Sensibles</h2><table><tr><th>Archivo</th><th>Bytes</th></tr>' + ''.join(f'<tr><td>{f["archivo"]}</td><td>{f["bytes"]}</td></tr>' for f in sensitive) + '</table></div>' if sensitive else ''}
   
+    <div class="section">
+    <h2>WAF</h2>
+    <p>{waf.get('nombre') if waf.get('detectado') else 'No detectado'}</p>
+  </div>
+  <div class="section">
+    <h2>Email Spoofing</h2>
+    <table>
+      <tr><th>Registro</th><th>Estado</th></tr>
+      <tr><td>SPF</td><td>{email.get('spf', 'N/A')}</td></tr>
+      <tr><td>DMARC</td><td>{email.get('dmarc', 'N/A')}</td></tr>
+      <tr><td>DKIM</td><td>{email.get('dkim', 'N/A')}</td></tr>
+      <tr><td>Vulnerable</td><td>{'SI' if email.get('vulnerable') else 'NO'}</td></tr>
+    </table>
+  </div>
+  <div class="section">
+    <h2>CORS</h2>
+    <p>{('PROBLEMAS DETECTADOS: ' + str(len(cors))) if cors else 'OK: Sin problemas CORS'}</p>
+  </div>
+  <div class="section">
+    <h2>CVEs Detectados</h2>
+    <p>{(str(len(report.get('cves', []))) + ' CVEs encontrados') if report.get('cves') else 'No se encontraron CVEs'}</p>
+  </div>
+  <div class="section">
+    <h2>Open Redirects</h2>
+    <p>{('VULNERABLE: ' + str(len(report.get('open_redirects', [])))) if report.get('open_redirects') else 'OK: No se detectaron open redirects'}</p>
+  </div>
+  <div class="section">
+    <h2>CSRF</h2>
+    <p>{('ALERTA: ' + str(len(report.get('csrf', []))) + ' formularios sin proteccion') if report.get('csrf') else 'OK: Todos los formularios protegidos'}</p>
+  </div>
   {'<div class="section"><h2>Subdomain Takeover</h2><table><tr><th>Subdominio</th><th>Servicio</th></tr>' + ''.join(f'<tr><td>{t["subdominio"]}</td><td>{t["servicio"]}</td></tr>' for t in takeover) + '</table></div>' if takeover else ''}
 
   <div class="section" style="text-align:center; color:#7f8c8d; font-size:12px; margin-top:40px;">
-    Informe generado automaticamente por domain-checker | vaalsec
+    {'<div class="section"><h2>Subdomain Takeover</h2><table><tr><th>Subdominio</th><th>Servicio</th></tr>' + ''.join(f'<tr><td>{t["subdominio"]}</td><td>{t["servicio"]}</td></tr>' for t in report.get("subdomain_takeover", [])) + '</table></div>' if report.get("subdomain_takeover") else ''}
+  <div class="section">
+    <h2>Cabeceras en Subdominios</h2>
+    <table>
+      <tr><th>Subdominio</th><th>Cabeceras Faltantes</th></tr>
+      {''.join(f'<tr><td>{s["subdominio"]}</td><td>{", ".join(s["cabeceras_faltantes"])}</td></tr>' for s in report.get("subdomain_headers", []))}
+    </table>
+  </div>
+  Informe generado automaticamente por domain-checker | vaalsec
   </div>
 </div>
 </body>
@@ -930,10 +968,48 @@ def generate_html(report):
 
   {'<div class="section"><h2>Archivos Sensibles</h2><table><tr><th>Archivo</th><th>Bytes</th></tr>' + ''.join(f'<tr><td>{f["archivo"]}</td><td>{f["bytes"]}</td></tr>' for f in sensitive) + '</table></div>' if sensitive else ''}
   
+    <div class="section">
+    <h2>WAF</h2>
+    <p>{waf.get('nombre') if waf.get('detectado') else 'No detectado'}</p>
+  </div>
+  <div class="section">
+    <h2>Email Spoofing</h2>
+    <table>
+      <tr><th>Registro</th><th>Estado</th></tr>
+      <tr><td>SPF</td><td>{email.get('spf', 'N/A')}</td></tr>
+      <tr><td>DMARC</td><td>{email.get('dmarc', 'N/A')}</td></tr>
+      <tr><td>DKIM</td><td>{email.get('dkim', 'N/A')}</td></tr>
+      <tr><td>Vulnerable</td><td>{'SI' if email.get('vulnerable') else 'NO'}</td></tr>
+    </table>
+  </div>
+  <div class="section">
+    <h2>CORS</h2>
+    <p>{('PROBLEMAS DETECTADOS: ' + str(len(cors))) if cors else 'OK: Sin problemas CORS'}</p>
+  </div>
+  <div class="section">
+    <h2>CVEs Detectados</h2>
+    <p>{(str(len(report.get('cves', []))) + ' CVEs encontrados') if report.get('cves') else 'No se encontraron CVEs'}</p>
+  </div>
+  <div class="section">
+    <h2>Open Redirects</h2>
+    <p>{('VULNERABLE: ' + str(len(report.get('open_redirects', [])))) if report.get('open_redirects') else 'OK: No se detectaron open redirects'}</p>
+  </div>
+  <div class="section">
+    <h2>CSRF</h2>
+    <p>{('ALERTA: ' + str(len(report.get('csrf', []))) + ' formularios sin proteccion') if report.get('csrf') else 'OK: Todos los formularios protegidos'}</p>
+  </div>
   {'<div class="section"><h2>Subdomain Takeover</h2><table><tr><th>Subdominio</th><th>Servicio</th></tr>' + ''.join(f'<tr><td>{t["subdominio"]}</td><td>{t["servicio"]}</td></tr>' for t in takeover) + '</table></div>' if takeover else ''}
 
   <div class="section" style="text-align:center; color:#7f8c8d; font-size:12px; margin-top:40px;">
-    Informe generado automaticamente por domain-checker | vaalsec
+    {'<div class="section"><h2>Subdomain Takeover</h2><table><tr><th>Subdominio</th><th>Servicio</th></tr>' + ''.join(f'<tr><td>{t["subdominio"]}</td><td>{t["servicio"]}</td></tr>' for t in report.get("subdomain_takeover", [])) + '</table></div>' if report.get("subdomain_takeover") else ''}
+  <div class="section">
+    <h2>Cabeceras en Subdominios</h2>
+    <table>
+      <tr><th>Subdominio</th><th>Cabeceras Faltantes</th></tr>
+      {''.join(f'<tr><td>{s["subdominio"]}</td><td>{", ".join(s["cabeceras_faltantes"])}</td></tr>' for s in report.get("subdomain_headers", []))}
+    </table>
+  </div>
+  Informe generado automaticamente por domain-checker | vaalsec
   </div>
 </div>
 </body>
@@ -1279,6 +1355,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
 
 
 
