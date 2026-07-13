@@ -25,6 +25,7 @@ from modules.csrf import check_csrf
 from modules.subdomain_headers import check_subdomain_headers
 from modules.exposed_paths import check_exposed_paths
 from modules.api_endpoints import check_api_endpoints
+from modules.js_diff import check_js_diff
 from core.risk_score import calculate_risk_score
 from reporting.html_report import generate_html
 from reporting.markdown_report import generate_markdown
@@ -57,7 +58,8 @@ def main():
     cors = check_cors(domain)
     http_methods = check_http_methods(domain)
     source_code = check_source_code(domain)
-    js_findings = scan_js_files(domain)
+    js_findings, js_urls = scan_js_files(domain)
+    js_diff = check_js_diff(domain, js_urls)
     shodan_info = check_shodan(ip)
     email_spoofing = check_email_spoofing(domain)
     server_info = check_server_info(domain)
@@ -97,6 +99,7 @@ def main():
         "http_methods": http_methods,
         "codigo_fuente": source_code,
         "js_files": js_findings,
+        "js_diff": js_diff,
         "shodan": shodan_info,
         "email_spoofing": email_spoofing,
         "server_info": server_info,

@@ -73,4 +73,4 @@ def scan_js_files(domain):
             print(f"  No se encontro informacion sensible en archivos JS")
     except Exception as e:
         print(f"  Error: {e}")
-    return findings
+    return findings, js_urls
