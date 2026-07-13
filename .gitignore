@@ -4,3 +4,7 @@ report_*.html
 E-v1.js
 body.json
 invoice.json
+
+reports/
+*.json
+*.md
