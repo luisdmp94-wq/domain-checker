@@ -3,6 +3,8 @@ import requests
 
 
 def scan_js_files(domain):
+    findings = []
+    js_urls = []
     import re as _re
     print(f"\nEscaneando archivos JavaScript de {domain}:")
     findings = []

@@ -1,6 +1,4 @@
-﻿from core.http_client import install_hackerone_headers
-install_hackerone_headers()
-import sys
+﻿import sys
 from modules.ip import get_ip
 from modules.headers import get_headers, check_security_headers
 from modules.subdomains import find_subdomains
@@ -125,4 +123,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

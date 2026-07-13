@@ -1,0 +1,405 @@
+
+==================================================
+ARCHIVO: .\modules\js_scanner.py
+==================================================
+
+import re
+import requests
+
+
+def scan_js_files(domain):
+    findings = []
+    js_urls = []
+    import re as _re
+    print(f"\nEscaneando archivos JavaScript de {domain}:")
+    findings = []
+    try:
+        r = requests.get(f"https://{domain}/login", timeout=5, allow_redirects=True)
+        html = r.text
+        # Extraer JS desde tags src= y desde headers link:
+        js_pattern_html = r'src=["\'"]([^"\'"]+\.js[^"\'"]*)["\'"]' 
+        js_files = _re.findall(js_pattern_html, html)
+        # Tambien buscar en header link: (preload)
+        link_header = r.headers.get("link", "")
+        link_pattern = r'<([^>]+\.js[^>]*)>'''
+        js_files += _re.findall(link_pattern, link_header)
+        js_urls = []
+        for js in js_files[:10]:
+            if js.startswith("http"):
+                js_urls.append(js)
+            elif js.startswith("//"):
+                js_urls.append(f"https:{js}")
+            elif js.startswith("/"):
+                js_urls.append(f"https://{domain}{js}")
+            else:
+                js_urls.append(f"https://{domain}/{js}")
+        print(f"  Encontrados {len(js_urls)} archivos JS")
+        patterns = {
+            "aws_key": r'AKIA[0-9A-Z]{16}(?![0-9A-Z])',
+            "gcp_key": r'AIza[0-9A-Za-z_\-]{35}(?![0-9A-Za-z_\-])',
+            "github_token": r'gh[pousr]_[0-9A-Za-z]{36,}',
+            "jwt_token": r'eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+',
+            "api_key": r'(?:api[_-]?key|apikey|x-api-key)\s*[:=]\s*["\']([ a-zA-Z0-9_\-]{32,})["\']',
+            "secret": r'(?:client_secret|app_secret|auth_secret)\s*[:=]\s*["\'"]([a-zA-Z0-9_\-]{16,})["\']',
+            "endpoint": r'["\'][/](?:api|graphql|rest|v[0-9]+)[/][a-zA-Z0-9/_\-]{4,}["\']',
+            "ip_interna": r'(?:10\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)\d{1,3}\.\d{1,3}',
+        }
+        FP_KEYWORDS = {
+            "onetimepassword", "placeholder", "example", "your_key",
+            "your_secret", "insert_here", "xxxxxxxxxx", "aaaaaaaaa",
+            "undefined", "null", "false", "true", "function", "return"
+        }
+        for js_url in js_urls:
+            try:
+                js_r = requests.get(js_url, timeout=5)
+                js_content = js_r.text
+                for pattern_name, pattern in patterns.items():
+                    matches = _re.findall(pattern, js_content, _re.IGNORECASE)
+                    if not matches:
+                        continue
+                    unique = list(set(matches))[:3]
+                    for match in unique:
+                        match_str = match[:80] if isinstance(match, str) else str(match)[:80]
+                        match_lower = match_str.lower()
+                        if any(fp in match_lower for fp in FP_KEYWORDS):
+                            print(f"  SKIP FP  {pattern_name}: {match_str[:40]}")
+                            continue
+                        if pattern_name == "endpoint":
+                            if _re.search(r'[(){}\[\]<>+*=;,]', match_str):
+                                continue
+                            if len(match_str) < 8:
+                                continue
+                        if pattern_name == "aws_key":
+                            if not _re.search(r'AKIA[0-9A-Z]{16}', match_str):
+                                continue
+                        print(f"  ENCONTRADO  {pattern_name} en {js_url.split('/')[-1]}: {match_str}")
+                        findings.append({"tipo": pattern_name, "archivo": js_url.split('/')[-1], "valor": match_str})
+            except:
+                pass
+        if not findings:
+            print(f"  No se encontro informacion sensible en archivos JS")
+    except Exception as e:
+        print(f"  Error: {e}")
+    return findings, js_urls
+
+==================================================
+ARCHIVO: .\modules\email_spoofing.py
+==================================================
+
+import dns.resolver
+import dns.exception
+
+
+def _txt_value(record):
+    if hasattr(record, "strings"):
+        return b"".join(record.strings).decode("utf-8", errors="ignore")
+    return str(record).replace('" "', "").strip('"')
+
+
+def check_email_spoofing(domain):
+    print(f"\nAnalizando vulnerabilidad email spoofing de {domain}:")
+
+    results = {
+        "spf": None,
+        "dmarc": None,
+        "dkim": None,
+        "vulnerable": False,
+        "issues": [],
+    }
+
+    resolver = dns.resolver.Resolver(configure=False)
+    resolver.nameservers = ['1.1.1.1', '8.8.8.8']
+    resolver.timeout = 5
+    resolver.lifetime = 10
+
+    # SPF
+    try:
+        txt_records = resolver.resolve(domain, "TXT")
+        spf_record = next(
+            (
+                _txt_value(record)
+                for record in txt_records
+                if _txt_value(record).lower().startswith("v=spf1")
+            ),
+            None,
+        )
+
+        if not spf_record:
+            results["spf"] = "FALTA"
+            print("  SPF: FALTA")
+        elif "-all" in spf_record.lower():
+            results["spf"] = "ESTRICTO"
+            print("  SPF: OK (estricto -all)")
+        elif "~all" in spf_record.lower():
+            results["spf"] = "FLEXIBLE"
+            print("  SPF: MEDIO (~all softfail)")
+        else:
+            results["spf"] = "DEBIL"
+            print("  SPF: Sin politica de rechazo")
+
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+        results["spf"] = "FALTA"
+        print("  SPF: FALTA")
+    except (dns.exception.Timeout, dns.resolver.NoNameservers) as exc:
+        results["spf"] = "ERROR"
+        print(f"  SPF: Error DNS - {exc}")
+
+    # DMARC
+    try:
+        dmarc_records = resolver.resolve(f"_dmarc.{domain}", "TXT")
+        dmarc_record = next(
+            (
+                _txt_value(record)
+                for record in dmarc_records
+                if _txt_value(record).lower().startswith("v=dmarc1")
+            ),
+            None,
+        )
+
+        if not dmarc_record:
+            results["dmarc"] = "FALTA"
+            print("  DMARC: FALTA")
+        elif "p=reject" in dmarc_record.lower():
+            results["dmarc"] = "ESTRICTO"
+            print("  DMARC: OK (p=reject)")
+        elif "p=quarantine" in dmarc_record.lower():
+            results["dmarc"] = "MEDIO"
+            print("  DMARC: MEDIO (p=quarantine)")
+        elif "p=none" in dmarc_record.lower():
+            results["dmarc"] = "DEBIL"
+            print("  DMARC: DEBIL (p=none)")
+        else:
+            results["dmarc"] = "SIN_POLITICA"
+            print("  DMARC: Sin politica")
+
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+        results["dmarc"] = "FALTA"
+        print("  DMARC: FALTA")
+    except (dns.exception.Timeout, dns.resolver.NoNameservers) as exc:
+        results["dmarc"] = "ERROR"
+        print(f"  DMARC: Error DNS - {exc}")
+
+    # DKIM
+    selectors = ["default", "google", "mail", "dkim", "k1", "selector1", "selector2"]
+    results["dkim"] = "No detectado"
+
+    for selector in selectors:
+        try:
+            resolver.resolve(f"{selector}._domainkey.{domain}", "TXT")
+            results["dkim"] = f"OK (selector: {selector})"
+            print(f"  DKIM: OK (selector '{selector}')")
+            break
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            continue
+        except (dns.exception.Timeout, dns.resolver.NoNameservers):
+            continue
+
+    if results["dkim"] == "No detectado":
+        print("  DKIM: No detectado")
+
+    # No marcar automáticamente como vulnerable solo por faltar políticas.
+    results["vulnerable"] = False
+    print("  RESULTADO: Revision informativa completada")
+
+    return results
+
+
+
+==================================================
+ARCHIVO: .\modules\http_methods.py
+==================================================
+
+import requests
+
+
+def check_http_methods(domain):
+    print(f"\nVerificando metodos HTTP de {domain}:")
+    dangerous_methods = ["PUT", "DELETE", "TRACE", "CONNECT", "PATCH"]
+    results = []
+
+    for method in dangerous_methods:
+        try:
+            r = requests.request(method, f"https://{domain}/", timeout=5)
+
+            if 200 <= r.status_code < 300:
+                print(f"  REVISAR  {method} respondio - Status {r.status_code}")
+                results.append({"metodo": method, "status": r.status_code})
+            else:
+                print(f"  OK  {method} no habilitado - Status {r.status_code}")
+
+        except requests.RequestException as exc:
+            print(f"  ERROR  {method}: {exc}")
+
+    if not results:
+        print("  OK: No se detectaron metodos peligrosos habilitados")
+
+    return results
+
+
+==================================================
+ARCHIVO: .\core\http_client.py
+==================================================
+
+import requests
+from urllib.parse import urlparse
+
+_ORIGINAL_REQUEST = requests.sessions.Session.request
+
+def install_hackerone_headers():
+    def patched_request(session, method, url, **kwargs):
+        hostname = (urlparse(str(url)).hostname or "").lower()
+
+        if hostname == "stripchat.com" or hostname.endswith(".stripchat.com"):
+            headers = dict(kwargs.get("headers") or {})
+            headers.setdefault("User-Agent", "Mozilla/5.0")
+            headers.setdefault("HackerOne", "VaalSec")
+            kwargs["headers"] = headers
+
+        return _ORIGINAL_REQUEST(session, method, url, **kwargs)
+
+    requests.sessions.Session.request = patched_request
+
+
+==================================================
+ARCHIVO: .\core\http_config.py
+==================================================
+
+DEFAULT_HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "HackerOne": "VaalSec",
+}
+
+
+==================================================
+ARCHIVO: .\main.py
+==================================================
+
+from core.http_client import install_hackerone_headers
+install_hackerone_headers()
+import sys
+from modules.ip import get_ip
+from modules.headers import get_headers, check_security_headers
+from modules.subdomains import find_subdomains
+from modules.ssl_check import check_ssl
+from modules.technologies import detect_technologies
+from modules.ports import scan_ports
+from modules.waf import detect_waf
+from modules.dns_check import check_dns_records
+from modules.robots import check_robots_and_sitemap
+from modules.sensitive_files import check_sensitive_files
+from modules.http_redirect import check_http_redirect
+from modules.cookies import check_cookies
+from modules.cors import check_cors
+from modules.http_methods import check_http_methods
+from modules.source_code import check_source_code
+from modules.js_scanner import scan_js_files
+from modules.email_spoofing import check_email_spoofing
+from modules.server_info import check_server_info
+from modules.shodan_check import check_shodan
+from modules.subdomain_takeover import check_subdomain_takeover
+from modules.cves import check_cves
+from modules.open_redirect import check_open_redirect
+from modules.csrf import check_csrf
+from modules.subdomain_headers import check_subdomain_headers
+from modules.exposed_paths import check_exposed_paths
+from modules.api_endpoints import check_api_endpoints
+from modules.ct_logs import check_ct_logs
+from modules.js_diff import check_js_diff
+from core.risk_score import calculate_risk_score
+from reporting.html_report import generate_html
+from reporting.markdown_report import generate_markdown
+from reporting.json_report import save_report
+from datetime import datetime
+
+def main():
+    if len(sys.argv) < 2:
+        print("Uso: python main.py <dominio>")
+        sys.exit(1)
+
+    domain = sys.argv[1]
+    print(f"\nAnalizando: {domain}")
+
+    ip = get_ip(domain)
+    print(f"IP: {ip}")
+
+    headers = get_headers(domain)
+    security = check_security_headers(headers)
+    subdomains = find_subdomains(domain)
+    ssl_info = check_ssl(domain)
+    technologies = detect_technologies(domain)
+    ports = scan_ports(ip)
+    waf = detect_waf(domain)
+    dns_info = check_dns_records(domain)
+    robots_sitemap = check_robots_and_sitemap(domain)
+    sensitive_files = check_sensitive_files(domain)
+    http_redirect = check_http_redirect(domain)
+    cookies = check_cookies(domain)
+    cors = check_cors(domain)
+    http_methods = check_http_methods(domain)
+    source_code = check_source_code(domain)
+    js_findings, js_urls = scan_js_files(domain)
+    js_diff = check_js_diff(domain, js_urls)
+    shodan_info = check_shodan(ip)
+    email_spoofing = check_email_spoofing(domain)
+    server_info = check_server_info(domain)
+    takeover = check_subdomain_takeover(subdomains)
+    cves = check_cves(technologies)
+    open_redirects = check_open_redirect(domain)
+    csrf = check_csrf(domain)
+    subdomain_headers = check_subdomain_headers(subdomains)
+    ct_subdomains = check_ct_logs(domain)
+    exposed_paths = check_exposed_paths(domain)
+    api_endpoints = check_api_endpoints(domain)
+    risk_score = calculate_risk_score({
+        "cabeceras_seguridad": security, "ssl": ssl_info, "waf": waf,
+        "http_redirect": http_redirect, "archivos_sensibles": sensitive_files,
+        "cors": cors, "http_methods": http_methods, "dns": dns_info,
+        "codigo_fuente": source_code, "js_files": js_findings,
+        "shodan": shodan_info, "email_spoofing": email_spoofing,
+        "server_info": server_info, "subdomain_takeover": takeover,
+        "ct_subdomains": ct_subdomains,
+        "exposed_paths": exposed_paths, "api_endpoints": api_endpoints
+    })
+
+    report = {
+        "dominio": domain,
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "ip": ip,
+        "ssl": ssl_info,
+        "cabeceras_seguridad": security,
+        "subdominios": subdomains,
+        "tecnologias": technologies,
+        "puertos": ports,
+        "waf": waf,
+        "dns": dns_info,
+        "robots_sitemap": robots_sitemap,
+        "archivos_sensibles": sensitive_files,
+        "http_redirect": http_redirect,
+        "cookies": cookies,
+        "cors": cors,
+        "http_methods": http_methods,
+        "codigo_fuente": source_code,
+        "js_files": js_findings,
+        "js_diff": js_diff,
+        "shodan": shodan_info,
+        "email_spoofing": email_spoofing,
+        "server_info": server_info,
+        "subdomain_takeover": takeover,
+        "cves": cves,
+        "open_redirects": open_redirects,
+        "csrf": csrf,
+        "subdomain_headers": subdomain_headers,
+        "ct_subdomains": ct_subdomains,
+        "exposed_paths": exposed_paths,
+        "api_endpoints": api_endpoints,
+        "risk_score": risk_score
+    }
+
+    save_report(report, domain)
+    generate_markdown(report)
+    generate_html(report)
+
+if __name__ == "__main__":
+    main()
+
+
