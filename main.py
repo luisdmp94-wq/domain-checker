@@ -25,6 +25,7 @@ from modules.csrf import check_csrf
 from modules.subdomain_headers import check_subdomain_headers
 from modules.exposed_paths import check_exposed_paths
 from modules.api_endpoints import check_api_endpoints
+from modules.ct_logs import check_ct_logs
 from modules.js_diff import check_js_diff
 from core.risk_score import calculate_risk_score
 from reporting.html_report import generate_html
@@ -68,6 +69,7 @@ def main():
     open_redirects = check_open_redirect(domain)
     csrf = check_csrf(domain)
     subdomain_headers = check_subdomain_headers(subdomains)
+    ct_subdomains = check_ct_logs(domain)
     exposed_paths = check_exposed_paths(domain)
     api_endpoints = check_api_endpoints(domain)
     risk_score = calculate_risk_score({
@@ -77,6 +79,7 @@ def main():
         "codigo_fuente": source_code, "js_files": js_findings,
         "shodan": shodan_info, "email_spoofing": email_spoofing,
         "server_info": server_info, "subdomain_takeover": takeover,
+        "ct_subdomains": ct_subdomains,
         "exposed_paths": exposed_paths, "api_endpoints": api_endpoints
     })
 
@@ -108,6 +111,7 @@ def main():
         "open_redirects": open_redirects,
         "csrf": csrf,
         "subdomain_headers": subdomain_headers,
+        "ct_subdomains": ct_subdomains,
         "exposed_paths": exposed_paths,
         "api_endpoints": api_endpoints,
         "risk_score": risk_score
